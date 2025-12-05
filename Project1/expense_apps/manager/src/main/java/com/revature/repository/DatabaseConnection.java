@@ -13,12 +13,15 @@ public class DatabaseConnection {
     
     public DatabaseConnection() {
         // Use environment variable or default path
-        System.setProperty("databasePath", "/home/eric/programming/expense/employee/expense_manager.db");
-        this.databasePath = System.getenv("DATABASE_PATH") != null
+      System.setProperty(
+        "databasePath",
+        "C:/Users/hpham/Documents/revature/expense_apps/employee/expense_manager.db"
+      );
+      this.databasePath = System.getenv("DATABASE_PATH") != null
             ? System.getenv("DATABASE_PATH")
             : System.getProperty("databasePath");
     }
-    
+
     public DatabaseConnection(String databasePath) {
         this.databasePath = databasePath;
     }
