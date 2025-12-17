@@ -1,26 +1,123 @@
 from unittest.mock import MagicMock
+from typing import List, Tuple
 
 import pytest
 
-from repository import UserRepository, ExpenseRepository, Expense
+from repository import ExpenseRepository, Expense, ApprovalRepository, Approval
 from service import ExpenseService
 
+#Expense Repository mock
+@pytest.fixture(scope="module")
+def mock_expense_repo():
+    return MagicMock(spec=ExpenseRepository)
+
+#User Repository mock
+@pytest.fixture(scope="module")
+def mock_approval_repo():
+    return MagicMock(spec=ApprovalRepository)
+
+#Expense Service object
+@pytest.fixture(scope="module")
+def expense_service_test(mock_expense_repo, mock_approval_repo):
+    return ExpenseService(mock_expense_repo, mock_approval_repo)
+
+#========================================================================================================
+# SUBMIT EXPENSE TESTS
+#========================================================================================================
+@pytest.mark.parametrize("amount", [
+    -1.0,
+    0.0,
+    -1000.0,
+    -2.0
+])
+#EU-022
+def test_submit_expense_negative_amount_returns_exception(expense_service_test, amount):
+    #Arrange
+    with pytest.raises(ValueError, match="Amount must be greater than 0"):
+
+        #Act
+        result = expense_service_test.submit_expense(1, amount, "test", "date")
+
+        #Assert
+        assert result == ValueError
+
+#EU-023
+def test_submit_expense_empty_description_returns_exception(expense_service_test):
+    # Arrange
+    with pytest.raises(ValueError, match="Description is required"):
+        # Act
+        result = expense_service_test.submit_expense(1, 1.0, "", "date")
+
+        # Assert
+        assert result == ValueError
+
+#EU-024
+def test_submit_expense_returns_expense(expense_service_test, mock_expense_repo):
+    #Arrange
+    expense = expense_service_test.submit_expense(1, 1.0, "test", "date")
+    mock_expense_repo.create.return_value = expense
+
+    #Act
+    result = expense_service_test.submit_expense(1, 1.0, "test", "date")
+
+    #Assert
+    assert result == expense
+    mock_expense_repo.create.assert_called()
+
+#========================================================================================================
+# GET USER EXPENSES WITH STATUS TESTS
+#========================================================================================================
+#EU-025
+def test_get_user_expenses_with_status_returns_list(expense_service_test, mock_approval_repo):
+
+    #Arrange
+    user_id = 1
+
+    #Act
+    result = expense_service_test.get_user_expenses_with_status(user_id)
+
+    #Assert
+    assert result is not None
+    mock_approval_repo.find_expenses_with_status_for_user.assert_called_with(user_id)
+
+#EU-026
+def test_get_user_expenses_with_status_returns_emptyList(expense_service_test, mock_approval_repo):
+
+    #Arrange
+    user_id = 1
+    mock_approval_repo.find_expenses_with_status_for_user.return_value = []
+
+    #Act
+    result = expense_service_test.get_user_expenses_with_status(user_id)
+
+    #Assert
+    assert len(result) is 0
+    mock_approval_repo.find_expenses_with_status_for_user.assert_called_with(user_id)
 
 
-@pytest.fixture(scope='module')
-def startUp():
-    mock_expense_repository = MagicMock(spec=ExpenseRepository)
-    mock_user_repository = MagicMock(spec=UserRepository)
+#========================================================================================================
+# GET EXPENSE BY ID TESTS
+#========================================================================================================
+#EU-027
+def test_get_expense_by_id_returns_expense(expense_service_test, mock_expense_repo):
+    #Arrange
+    expense = Expense(1, 1, 1.0, 'test', 'date')
+    mock_expense_repo.find_by_id.return_value = expense
 
-    service = ExpenseService(mock_expense_repository, mock_user_repository)
+    #Act
+    result = expense_service_test.get_expense_by_id(1,1)
 
-    yield service, mock_expense_repository, mock_user_repository
+    #Assert
+    assert result is expense
+    mock_expense_repo.find_by_id.assert_called_once_with(1)
 
-def test_get_expense_by_id_returns_None(startUp):
+#EU-028
+def test_get_expense_by_id_returns_None(expense_service_test, mock_expense_repo):
+    #Arrange
+    mock_expense_repo.find_by_id.return_value = None
 
-    startUp[1].find_by_id.return_value = None
+    #Act
+    result = expense_service_test.get_expense_by_id(1,1)
 
-    result = startUp[0].get_expense_by_id(1,1)
-
+    #Assert
     assert result is None
-
