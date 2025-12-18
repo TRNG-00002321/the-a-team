@@ -1,5 +1,4 @@
-from unittest.mock import MagicMock
-from typing import List, Tuple
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -154,3 +153,88 @@ def test_get_expense_with_status_returns_None(expense_service_test, mock_approva
 
     #Assert
     assert result is None
+
+#========================================================================================================
+# UPDATE EXPENSE TESTS
+#========================================================================================================
+#EU-031
+def test_update_expense_returns_expense(expense_service_test, mock_expense_repo):
+
+    #Arrange
+    expense = Expense(1, 1, 1.0, 'test', 'date')
+    approval = Approval(1, 1, 'pending', None, None, None)
+    mock_expense_repo.update.return_value = expense
+    result = None
+
+    #Act
+    with patch("service.expense_service.ExpenseService.get_expense_with_status", return_value = (expense, approval)):
+        result = expense_service_test.update_expense(1, 1, 1.0, 'test', 'date')
+
+    #Assert
+    assert result == expense
+    mock_expense_repo.update.assert_called()
+
+#EU-032
+def test_update_expense_returns_none(expense_service_test, mock_expense_repo):
+    #Arrange
+    result = None
+
+    #Act
+    with patch("service.expense_service.ExpenseService.get_expense_with_status", return_value = None):
+        result = expense_service_test.update_expense(1, 1, 1.0, 'test', 'date')
+
+    #Assert
+    assert result is None
+
+@pytest.mark.parametrize("status", [
+    'denied',
+    'approved'
+])
+#EU-033
+def test_update_expense_not_pending_returns_exception(expense_service_test, mock_expense_repo, status):
+    #Arrange
+    expense = Expense(1, 1, 1.0, 'test', 'date')
+    approval = Approval(1, 1, status, None, None, None)
+
+    #Act
+    with patch("service.expense_service.ExpenseService.get_expense_with_status", return_value = (expense, approval)):
+        with pytest.raises(ValueError, match="Cannot edit expense that has been reviewed"):
+            result = expense_service_test.update_expense(1, 1, 1.0, 'test', 'date')
+
+            # Assert
+            assert result == ValueError
+            mock_expense_repo.update.assert_not_called()
+
+@pytest.mark.parametrize("amount", [
+    -1.0,
+    0.0
+])
+#EU-034
+def test_update_expense_negative_amount_returns_exception(expense_service_test, mock_expense_repo, amount):
+    #Arrange
+    expense = Expense(1, 1, 1.0, 'test', 'date')
+    approval = Approval(1, 1, 'pending', None, None, None)
+
+    #Act
+    with patch("service.expense_service.ExpenseService.get_expense_with_status", return_value = (expense, approval)):
+        with pytest.raises(ValueError, match="Amount must be greater than 0"):
+            result = expense_service_test.update_expense(1, 1, amount, 'test', 'date')
+
+            # Assert
+            assert result == ValueError
+            mock_expense_repo.update.assert_not_called()
+
+#EU-035
+def test_update_expense_empty_description_returns_exception(expense_service_test, mock_expense_repo):
+    #Arrange
+    expense = Expense(1, 1, 1.0, 'test', 'date')
+    approval = Approval(1, 1, 'pending', None, None, None)
+
+    #Act
+    with patch("service.expense_service.ExpenseService.get_expense_with_status", return_value = (expense, approval)):
+        with pytest.raises(ValueError, match="Description is required"):
+            result = expense_service_test.update_expense(1, 1, 1.0, "", 'date')
+
+            # Assert
+            assert result == expense
+            mock_expense_repo.update.assert_not_called()
