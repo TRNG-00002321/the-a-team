@@ -236,5 +236,48 @@ def test_update_expense_empty_description_returns_exception(expense_service_test
             result = expense_service_test.update_expense(1, 1, 1.0, "", 'date')
 
             # Assert
-            assert result == expense
+            assert result == ValueError
             mock_expense_repo.update.assert_not_called()
+
+#========================================================================================================
+# DELETE EXPENSE TESTS
+#========================================================================================================
+def test_delete_expense_returns_true(expense_service_test, mock_expense_repo):
+    #Arrange
+    expense = Expense(1, 1, 1.0, 'test', 'date')
+    approval = Approval(1, 1, 'pending', None, None, None)
+    mock_expense_repo.delete.return_value = True
+
+    #Act
+    with patch("service.expense_service.ExpenseService.get_expense_with_status", return_value = (expense, approval)):
+            result = expense_service_test.delete_expense(1,1)
+
+            # Assert
+            assert result == True
+
+@pytest.mark.parametrize("status", [
+    'denied',
+    'approved',
+])
+def test_delete_expense_returns_exception_if_status_not_pending(expense_service_test, status):
+    #Arrange
+    expense = Expense(1, 1, 1.0, 'test', 'date')
+    approval = Approval(1, 1, status, None, None, None)
+
+    #Act
+    with patch("service.expense_service.ExpenseService.get_expense_with_status", return_value = (expense, approval)):
+        with pytest.raises(ValueError):
+            result = expense_service_test.delete_expense(1,1)
+
+            # Assert
+            assert result == ValueError
+
+def test_delete_expense_returns_false(expense_service_test):
+
+    #Arrange
+    with patch("service.expense_service.ExpenseService.get_expense_with_status", return_value = None):
+        #Act
+        result = expense_service_test.delete_expense(1, 1)
+
+        # Assert
+        assert result == False
