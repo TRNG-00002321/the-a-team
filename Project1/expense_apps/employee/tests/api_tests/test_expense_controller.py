@@ -27,10 +27,45 @@ def app(monkeypatch):
 def client(app):
     return app.test_client()
 
-def test_submit_expense(client, app, monkeypatch):
+@pytest.mark.parametrize(
+  "json, expected_amount, expected_description, expected_date",
+  [
+    (
+      {"amount": 100.1, "description": "Lunch", "date": "2025-12-19"},
+      100.1,
+      "Lunch",
+      "2025-12-19",
+    ),
+    (
+      {"amount": 50, "description": "Taxi", "date": "2025-01-01"},
+      50.0,
+      "Taxi",
+      "2025-01-01",
+    ),
+    (
+      {"amount": "75.25", "description": "Hotel"},
+      75.25,
+      "Hotel",
+      None,
+    ),
+    (
+      {"amount": 0.01, "description": "Coffee"},
+      0.01,
+      "Coffee",
+      None,
+    ),
+  ],
+)
+def test_submit_expense_positive_inputs_201_expense(client, app, monkeypatch, json, expected_amount, expected_description, expected_date):
   # sample data
   fake_user = User(1, "test_user", "test_pass", "Employee")
-  fake_expense = Expense(101, 1, 100.1, "test_description", "2025-12-19")
+  fake_expense = Expense(
+    101,
+    1,
+    expected_amount,
+    expected_description,
+    expected_date
+  )
 
   # Mock authenticated user
   monkeypatch.setattr(
@@ -44,19 +79,25 @@ def test_submit_expense(client, app, monkeypatch):
   mock_service.submit_expense.return_value = fake_expense
   app.expense_service = mock_service
 
-  response = client.post(
-    "/api/expenses",
-    json={
-      "amount": 100.1,
-      "description": "test_description",
-      "date": "2025-12-19"
-    }
-  )
+  response = client.post("/api/expenses", json=json)
 
   assert response.status_code == 201
   mock_service.submit_expense.assert_called_once_with(
     user_id=1,
-    amount=100.1,
-    description="test_description",
-    date="2025-12-19"
+    amount=expected_amount,
+    description=expected_description,
+    date=expected_date
   )
+  assert response.json["message"] == "Expense submitted successfully"
+  assert response.json["expense"]["amount"] == fake_expense.amount
+  assert response.json["expense"]["description"] == fake_expense.description
+  assert response.json["expense"]["date"] == fake_expense.date
+
+@pytest.mark.parametrize(
+  "json, expected_amount, expected_description, expected_date",
+  [
+
+  ],
+)
+def test_submit_expense_negative_inputs_errors(client, app, monkeypatch, json, expected_amount, expected_description, expected_date):
+  pass
