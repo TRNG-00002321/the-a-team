@@ -16,8 +16,11 @@ class Test_Authentication_Service:
         return mock_repo, service
 
     @pytest.mark.parametrize("repo_user, username, password, expectedResult", [
+        # EU-011
         (User(1, "testUser1", "testPassword1", "Employee"), "testUser1", "testPassword1", User(1, "testUser1", "testPassword1", "Employee")),
+        # EU-012
         (User(1, "testUser1", "testPassword1", "Employee"), "testUser1", "testPassword2", None),
+        # EU-013
         (None, "missing", "missing", None)
     ])
     def test_authenticate_user(self, setup, repo_user, username, password, expectedResult):
@@ -30,9 +33,11 @@ class Test_Authentication_Service:
         setup[0].find_by_username.assert_called_once_with(username)
 
     @pytest.mark.parametrize("user_id, repo_result, expected", [
-            (1, User(1, "testUser1", "pass", "Employee"), User(1, "testUser1", "pass", "Employee")),
-            (2, None, None),
-        ])
+        # EU-014
+        (1, User(1, "testUser1", "pass", "Employee"), User(1, "testUser1", "pass", "Employee")),
+        # EU-015
+        (2, None, None),
+    ])
     def test_get_user_by_id(self, setup, user_id, repo_result, expected):
         # Assign
         setup[0].find_by_id.return_value = repo_result
@@ -44,6 +49,7 @@ class Test_Authentication_Service:
         assert result == expected
         setup[0].find_by_id.assert_called_once_with(user_id)
 
+    # EU-016
     def test_generate_jwt_token(self, setup):
         # Assign
         user = User(1, "testUser", "pass", "Employee")
@@ -56,6 +62,7 @@ class Test_Authentication_Service:
         assert token == "encoded.jwt"
         mock_encode.assert_called_once()
 
+    # EU-017
     def test_validate_jwt_token_valid(self, setup):
         # Assign
         token = "valid.token"
@@ -68,6 +75,7 @@ class Test_Authentication_Service:
         # Assert
         assert result == payload
 
+    # EU-018, EU-019
     @pytest.mark.parametrize(
         "exception",
         [jwt.ExpiredSignatureError, jwt.InvalidTokenError],
@@ -80,6 +88,7 @@ class Test_Authentication_Service:
         # Assert
         assert result is None
 
+    # EU-20
     def test_get_user_from_token_valid(self, setup):
         # Assign
         token = "valid.token"
@@ -94,6 +103,7 @@ class Test_Authentication_Service:
         # Assert
         assert result == user1
 
+    # EU-21
     def test_get_user_from_token_invalid(self, setup):
         # Assign
         token = "invalid.token"
