@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 import jwt
 import pytest
 
-from repository import UserRepository, User
-from service import AuthenticationService
+from src.repository import UserRepository, User
+from src.service import AuthenticationService
 
 
 class Test_Authentication_Service:

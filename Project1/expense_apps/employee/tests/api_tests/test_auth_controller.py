@@ -1,6 +1,6 @@
 import pytest
 from flask import Flask
-from api import auth_controller
+from src.api import auth_controller
 
 
 class Test_Auth_Controller:
