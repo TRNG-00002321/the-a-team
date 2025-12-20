@@ -94,10 +94,46 @@ def test_submit_expense_positive_inputs_201_expense(client, app, monkeypatch, js
   assert response.json["expense"]["date"] == fake_expense.date
 
 @pytest.mark.parametrize(
-  "json, expected_amount, expected_description, expected_date",
+  "json, status_code, error_description",
   [
-
+    ({"description": "lunch"}, 400, "Amount and description are required"),
+    ({"amount" : None, "description": "lunch"}, 400, "Amount and description are required"),
+    ({"amount" : 10}, 400, "Amount and description are required"),
+    ({"amount" : 10, "description" : None}, 400, "Amount and description are required"),
+    ({"amount" : "abc", "description": "lunch"}, 400, "Amount must be a valid number"),
   ],
 )
-def test_submit_expense_negative_inputs_errors(client, app, monkeypatch, json, expected_amount, expected_description, expected_date):
-  pass
+def test_submit_expense_negative_inputs_errors(client, app, monkeypatch, json, status_code, error_description):
+  # Mock ExpenseService
+  app.expense_service = MagicMock()
+
+  response = client.post("/api/expenses", json=json)
+
+  assert response.status_code == status_code
+  assert response.get_json()["error"] == error_description
+
+@pytest.mark.parametrize(
+  "exception, status_code",
+  [
+    (ValueError(), 400),
+    (Exception(), 500),
+  ]
+)
+def test_submit_expense_exception_error(client, app, monkeypatch, exception, status_code):
+  fake_user = User(1, "test_user", "test_pass", "Employee")
+
+  # Mock authenticated user
+  monkeypatch.setattr(
+    expense_controller,
+    "get_current_user",
+    lambda: fake_user
+  )
+
+  mock_service = MagicMock()
+  mock_service.submit_expense.side_effect = exception
+  app.expense_service = mock_service
+
+  response = client.post("/api/expenses", json={
+    "amount": 1, "description": "sample", "date": "2025-12-19"
+  })
+  assert response.status_code == status_code
