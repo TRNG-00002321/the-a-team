@@ -28,7 +28,7 @@ def app(monkeypatch):
 
 @pytest.fixture
 def client(app):
-    return app.test_client()
+  return app.test_client()
 
 @pytest.mark.parametrize(
   "json, expected_amount, expected_description, expected_date",
