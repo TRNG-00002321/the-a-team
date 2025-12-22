@@ -2,9 +2,12 @@ import importlib
 import pytest
 from flask import Flask
 from unittest.mock import MagicMock
-from src.repository import User, Expense
+from src.repository import User, Expense, Approval
 from src.api import auth
 import src.api.expense_controller as expense_controller
+
+BASE_ROUTE = "/api/expenses"
+FAKE_USER = User(1, "test_user", "test_pass", "Employee")
 
 @pytest.fixture
 def app(monkeypatch):
@@ -25,9 +28,38 @@ def app(monkeypatch):
 
 @pytest.fixture
 def client(app):
-    return app.test_client()
+  return app.test_client()
 
-def test_submit_expense(client, app, monkeypatch):
+@pytest.mark.parametrize(
+  "json, expected_amount, expected_description, expected_date",
+  [
+    (
+      {"amount": 100.1, "description": "Lunch", "date": "2025-12-19"},
+      100.1,
+      "Lunch",
+      "2025-12-19",
+    ),
+    (
+      {"amount": 50, "description": "Taxi", "date": "2025-01-01"},
+      50.0,
+      "Taxi",
+      "2025-01-01",
+    ),
+    (
+      {"amount": "75.25", "description": "Hotel"},
+      75.25,
+      "Hotel",
+      None,
+    ),
+    (
+      {"amount": 0.01, "description": "Coffee"},
+      0.01,
+      "Coffee",
+      None,
+    ),
+  ],
+)
+def test_submit_expense_positive_inputs_201_expense(client, app, monkeypatch, json, expected_amount, expected_description, expected_date):
   # sample data
   fake_expense = Expense(
     101,
