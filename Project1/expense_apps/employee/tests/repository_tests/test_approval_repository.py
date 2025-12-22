@@ -13,7 +13,7 @@ from repository.database import DatabaseConnection
 @pytest.fixture
 def mock_db_connection():
     """Create a mock database connection."""
-    return Mock(spec=DatabaseConnection)
+    return MagicMock(spec=DatabaseConnection)
 
 
 @pytest.fixture
@@ -36,6 +36,23 @@ def mock_user_row():
     }[key])
     return row
 
+@pytest.fixture
+def mock_expense_approval_row():
+    """Create a mock database row with expense and approval data."""
+    row_dict = {
+        "id": 1,
+        "user_id": 1,
+        "amount": 100.0,
+        "description": "Meal",
+        "date": "02/02/2025",
+        "status":"approved",
+        "comment":"this is a comment",
+        "review_date":"02/03/2025"
+    }
+    row = MagicMock()
+    row.__getitem__ = Mock(side_effect=lambda key: row_dict[key])
+    return [row]
+
 
 def create_mock_connection(cursor_mock):
     """Helper to create a mock connection context manager."""
@@ -46,17 +63,24 @@ def create_mock_connection(cursor_mock):
         yield conn
     return mock_get_connection
 
-# Find by expense_id test:
+
 class TestFindByExpenseId:
     """Test cases for find_by_expense_id."""
 
     def test_find_by_expense_id_positive(self, approval_repository, mock_db_connection, mock_user_row):
         """Test finding a user by expense id successfully."""
+        #Arrange
         cursor_mock = Mock()
         cursor_mock.fetchone.return_value = mock_user_row
-        mock_db_connection.get_connection = create_mock_connection(cursor_mock)
+        conn_mock = Mock()
+        conn_mock.execute.return_value = cursor_mock
+        mock_db_connection.get_connection.return_value.__enter__.return_value = conn_mock
+        mock_db_connection.get_connection.return_value.__exit__.return_value = None
+
+        #Act
         result = approval_repository.find_by_expense_id(1)
 
+        #Assert
         assert result is not None
         assert isinstance(result, Approval)
         assert result.id == 1
@@ -66,26 +90,40 @@ class TestFindByExpenseId:
         assert result.comment == 'this is a comment'
         assert result.review_date == '02/02/2025'
 
-    def test_find_expense_id_negative(self, approval_repository, mock_db_connection):
-        """Test that None is returned when expense_id doesn't exist"""
+    @pytest.mark.parametrize(
+        "expense_id",
+        [
+            999,
+            0,
+            -1,
+            9999999
+        ]
+    )
+    def test_find_by_expense_id_negative(self, expense_id, approval_repository, mock_db_connection):
+        """ Test finding a user by expense id negative """
+        # Arrange
         cursor_mock = Mock()
         cursor_mock.fetchone.return_value = None
-        mock_db_connection.get_connection = create_mock_connection(cursor_mock)
-        result = approval_repository.find_by_expense_id(999)
+        conn_mock = Mock()
+        conn_mock.execute.return_value = cursor_mock
+        mock_db_connection.get_connection.return_value.__enter__.return_value = conn_mock
+        mock_db_connection.get_connection.return_value.__exit__.return_value = None
+        # Act
+        result = approval_repository.find_by_expense_id(expense_id)
+        # Assert
         assert result is None
 
 
     def test_find_by_expense_id_correct_sql_executed(self, approval_repository, mock_db_connection, mock_user_row):
         """Test that the correct SQL query is executed."""
+        # Arrange
         cursor_mock = Mock()
         cursor_mock.fetchone.return_value = mock_user_row
         conn_mock = Mock()
         conn_mock.execute.return_value = cursor_mock
-
-        @contextmanager
-        def mock_get_connection():
-            yield conn_mock
-        mock_db_connection.get_connection = mock_get_connection
+        mock_db_connection.get_connection.return_value.__enter__.return_value = conn_mock
+        mock_db_connection.get_connection.return_value.__exit__.return_value = None
+        #Act
         approval_repository.find_by_expense_id(1)
 
         #Verify SQL query and parameters
@@ -93,13 +131,60 @@ class TestFindByExpenseId:
         call_args = conn_mock.execute.call_args
         sql_query = call_args[0][0]
         params = call_args[0][1]
-
+        #Assert
         assert "SELECT id, expense_id, status, reviewer, comment, review_date FROM approvals" in sql_query
         assert "WHERE expense_id = ?" in sql_query
         assert params == (1, )
 
 
 # Find expense with status for user review test
+class TestFindExpensesWithStatusForUser:
+    """Test cases for find_expenses_with_status_for_user."""
+    def test_find_expenses_with_status_positive(self, approval_repository, mock_db_connection, mock_expense_approval_row):
+        """Test finding expenses with status positive."""
+        #Arrange
+        cursor_mock = MagicMock()
+        cursor_mock.fetchall.return_value = mock_expense_approval_row
+        conn_mock = MagicMock()
+        conn_mock.execute.return_value = cursor_mock
+        mock_db_connection.get_connection.return_value.__enter__.return_value = conn_mock
+        mock_db_connection.get_connection.return_value.__exit__.return_value = None
+        #Act
+        results = approval_repository.find_expenses_with_status_for_user(1)
+        #Assert
+        assert len(results) == 1
+        expense, approval = results[0]
+        assert expense.user_id == 1
+        assert expense.amount == 100.00
+        assert approval.status == "approved"
+        assert approval.comment == "this is a comment"
+
+    @pytest.mark.parametrize(
+        "user_id",
+        [
+            999,
+            0,
+            -1,
+            9999999
+        ]
+    )
+
+    def test_find_expenses_with_status_negative(self, user_id, approval_repository, mock_db_connection):
+        """Test finding expenses with status returns empty list if no rows found."""
+        #Arrange
+        cursor_mock = MagicMock()
+        cursor_mock.fetchall.return_value = []
+        conn_mock = MagicMock()
+        conn_mock.execute.return_value = cursor_mock
+        mock_db_connection.get_connection.return_value.__enter__.return_value = conn_mock
+        mock_db_connection.get_connection.return_value.__exit__.return_value = None
+        #Act
+        result = approval_repository.find_expenses_with_status_for_user(user_id)
+        #Assert
+        assert result == []
+        assert len(result) ==0
+
+
 
 # update status tests
 class TestUpdateApproval:
@@ -107,60 +192,67 @@ class TestUpdateApproval:
 
     def test_update_user_positive(self, approval_repository, mock_db_connection):
         """Testing updating a user's approval status positive."""
+        #Arrange
         cursor_mock = Mock()
         cursor_mock.rowcount = 1
         conn_mock = Mock()
         conn_mock.execute.return_value = cursor_mock
-        @contextmanager
-        def mock_get_connection():
-            yield conn_mock
-
-        mock_db_connection.get_connection = mock_get_connection
-
+        mock_db_connection.get_connection.return_value.__enter__.return_value = conn_mock
+        mock_db_connection.get_connection.return_value.__exit__.return_value = None
+        #Act
         result = approval_repository.update_status(1, status='approved')
+        #Assert
         assert result is True
 
-    def test_update_user_negative(self, approval_repository, mock_db_connection):
+    @pytest.mark.parametrize(
+        "expense_id",
+        [
+            999,
+            0,
+            -1,
+            9999999
+        ]
+    )
+
+    def test_update_user_negative(self, expense_id, approval_repository, mock_db_connection):
         """Testing updating a user's approval status negative."""
+        #Arrange
         cursor_mock = Mock()
         cursor_mock.rowcount = 0
         conn_mock = Mock()
         conn_mock.execute.return_value = cursor_mock
-
-        @contextmanager
-        def mock_get_connection():
-            yield conn_mock
-
-        mock_db_connection.get_connection = mock_get_connection
-        result = approval_repository.update_status(999, status='pending')
+        mock_db_connection.get_connection.return_value.__enter__.return_value = conn_mock
+        mock_db_connection.get_connection.return_value.__exit__.return_value = None
+        #Act
+        result = approval_repository.update_status(expense_id, status='pending')
+        #Assert
         assert result is False
 
-
-class TestFindExpensesWithStatusForUser:
-    """Test cases for find_expenses_with_status_for_user."""
-
-    def test_find_expenses_with_status_positive(self, approval_repository, mock_db_connection, mock_user_row):
-        """Test finding expenses with status positive."""
+    def test_update_approvals_correct_sql_executed(self, approval_repository, mock_db_connection):
+        #Arrange
         cursor_mock = Mock()
-        cursor_mock.fetchall.return_value = mock_user_row
+        cursor_mock.rowcount = 1
         conn_mock = Mock()
         conn_mock.execute.return_value = cursor_mock
+        mock_db_connection.get_connection.return_value.__enter__.return_value = conn_mock
+        mock_db_connection.get_connection.return_value.__exit__.return_value = None
+        #Act
+        result = approval_repository.update_status(1, "approved")
+        conn_mock.execute.assert_called_once()
+        sql, params = conn_mock.execute.call_args[0]
+        #Assert
+        assert "UPDATE approvals" in sql
+        assert "SET status = ?" in sql
+        assert "reviewer = ?" in sql
+        assert "comment = ?" in sql
+        assert "review_date = ?" in sql
+        assert "WHERE expense_id = ?" in sql
+        assert params == ("approved", None, None, None, 1)
+        assert result is True
 
-        @contextmanager
-        def mock_get_connection():
-            yield conn_mock
 
-        mock_db_connection.get_connection = mock_get_connection
-        result = approval_repository.find_expenses_with_status_for_user(1)
 
-        assert result is not None
-        assert isinstance(result, results)
-        assert result.id == 1
-        assert result.expense_id == 1
-        assert result.status == 'pending'
-        assert result.reviewer == 'johnathan'
-        assert result.comment == 'this is a comment'
-        assert result.review_date == '02/02/2025'
+
 
 
 
