@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import io.javalin.validation.Validator;
@@ -90,20 +92,23 @@ public class TestExpenseController {
     @DisplayName("Test approve expense, positive test with comment")
     @Test
     public void testApproveExpense_PositiveWithComment(){
-        //Arrange
-        int expenseId = 3;
-
-        when(ctx.pathParamAsClass("expenseId", Integer.class)).thenReturn(intValidator);
-        when(intValidator.get()).thenReturn(expenseId);
-        User manager = new User(1, "manager1", "password123", "Manager");
-        when(AuthenticationMiddleware.getAuthenticatedManager(ctx)).thenReturn(manager);
-        // for comment
-        Map<String, Object> exampleBody = new HashMap<String, Object>();
-        exampleBody.put("comment", "example comment");
-        when(ctx.bodyAsClass(Map.class)).thenReturn(exampleBody);
-        when(expenseService.approveExpense(expenseId, manager.getId(), (String)exampleBody.get("comment"))).thenReturn(true);
-        //Act
-        expenseController.approveExpense(ctx);
+        try(MockedStatic<AuthenticationMiddleware> mockedStatic = Mockito.mockStatic(AuthenticationMiddleware.class)) {
+            //Arrange
+            int expenseId = 3;
+            when(ctx.pathParamAsClass("expenseId", Integer.class)).thenReturn(intValidator);
+            when(intValidator.get()).thenReturn(expenseId);
+            User manager = new User(1, "manager1", "password123", "Manager");
+            when(AuthenticationMiddleware.getAuthenticatedManager(ctx)).thenReturn(manager);
+            // for comment
+            Map<String, Object> exampleBody = new HashMap<String, Object>();
+            exampleBody.put("comment", "example comment");
+            when(ctx.bodyAsClass(Map.class)).thenReturn(exampleBody);
+            when(expenseService.approveExpense(expenseId, manager.getId(), (String) exampleBody.get("comment"))).thenReturn(true);
+            //Act
+            expenseController.approveExpense(ctx);
+            //Assert
+            mockedStatic.verify(()->AuthenticationMiddleware.getAuthenticatedManager(ctx), times(1));
+        }
         //Assert
         verify(ctx, times(1)).pathParamAsClass("expenseId", Integer.class);
         verify(ctx, times(1)).bodyAsClass(Map.class);
@@ -117,18 +122,21 @@ public class TestExpenseController {
     @DisplayName("Test approve expense, positive test with no comment")
     @Test
     public void testApproveExpense_PositiveNoComment(){
-        //Arrange
-        int expenseId = 3;
-
-        when(ctx.pathParamAsClass("expenseId", Integer.class)).thenReturn(intValidator);
-        when(intValidator.get()).thenReturn(expenseId);
-        User manager = new User(1, "manager1", "password123", "Manager");
-        when(AuthenticationMiddleware.getAuthenticatedManager(ctx)).thenReturn(manager);
-        // for comment
-        when(ctx.bodyAsClass(Map.class)).thenThrow(BadRequestResponse.class);
-        when(expenseService.approveExpense(expenseId, manager.getId(), null)).thenReturn(true);
-        //Act
-        expenseController.approveExpense(ctx);
+        try(MockedStatic<AuthenticationMiddleware> mockedStatic = Mockito.mockStatic(AuthenticationMiddleware.class)) {
+            //Arrange
+            int expenseId = 3;
+            when(ctx.pathParamAsClass("expenseId", Integer.class)).thenReturn(intValidator);
+            when(intValidator.get()).thenReturn(expenseId);
+            User manager = new User(1, "manager1", "password123", "Manager");
+            when(AuthenticationMiddleware.getAuthenticatedManager(ctx)).thenReturn(manager);
+            // for comment
+            when(ctx.bodyAsClass(Map.class)).thenThrow(BadRequestResponse.class);
+            when(expenseService.approveExpense(expenseId, manager.getId(), null)).thenReturn(true);
+            //Act
+            expenseController.approveExpense(ctx);
+            //Assert
+            mockedStatic.verify(()->AuthenticationMiddleware.getAuthenticatedManager(ctx), times(1));
+        }
         //Assert
         verify(ctx, times(1)).pathParamAsClass("expenseId", Integer.class);
         verify(ctx, times(1)).bodyAsClass(Map.class);
@@ -167,9 +175,9 @@ public class TestExpenseController {
         assertEquals("Invalid expense ID format", ex.getMessage());
     }
 
-    @DisplayName("Test approve expense, get authenticate manager returns null value")
+    @DisplayName("Test approve expense, get authenticated manager returns null value")
     @Test
-    public void testApproveExpense_GetAuthenticateManagerFailure(){
+    public void testApproveExpense_GetAuthenticatedManagerFailure(){
         //Arrange
         int expenseId = 3;
         when(ctx.pathParamAsClass("expenseId", Integer.class)).thenReturn(intValidator);
@@ -196,9 +204,116 @@ public class TestExpenseController {
         assertTrue(ex.getMessage().contains("Failed to approve expense: "));
     }
 
+    @DisplayName("Test deny expense, positive test, with comment")
+    @Test
+    public void testDenyExpense_PositiveWithComment(){
+        try(MockedStatic<AuthenticationMiddleware> mockedStatic = Mockito.mockStatic(AuthenticationMiddleware.class)) {
+            //Arrange
+            int expenseId = 3;
+            when(ctx.pathParamAsClass("expenseId", Integer.class)).thenReturn(intValidator);
+            when(intValidator.get()).thenReturn(expenseId);
+            User manager = new User(1, "manager1", "password123", "Manager");
+            when(AuthenticationMiddleware.getAuthenticatedManager(ctx)).thenReturn(manager);
+            // for comment
+            Map<String, Object> exampleBody = new HashMap<String, Object>();
+            exampleBody.put("comment", "example comment");
+            when(ctx.bodyAsClass(Map.class)).thenReturn(exampleBody);
+            when(expenseService.denyExpense(expenseId, manager.getId(), (String) exampleBody.get("comment"))).thenReturn(true);
+            //Act
+            expenseController.denyExpense(ctx);
+            //Assert
+            mockedStatic.verify(()->AuthenticationMiddleware.getAuthenticatedManager(ctx), times(1));
+        }
+        //Assert
+        verify(ctx, times(1)).pathParamAsClass("expenseId", Integer.class);
+        verify(ctx, times(1)).bodyAsClass(Map.class);
+        verify(expenseService, times(1)).denyExpense(3, 1, "example comment");
+        verify(ctx, times(1)).json(Map.of(
+                "success", true,
+                "message", "Expense denied successfully"
+        ));
+        System.out.println("assertions done");
+    }
 
+    @DisplayName("Test deny expense, positive test, with no comment")
+    @Test
+    public void testDenyExpense_PositiveNoComment(){
+        try(MockedStatic<AuthenticationMiddleware> mockedStatic = Mockito.mockStatic(AuthenticationMiddleware.class)){
+            //Arrange
+            int expenseId = 3;
+            when(ctx.pathParamAsClass("expenseId", Integer.class)).thenReturn(intValidator);
+            when(intValidator.get()).thenReturn(expenseId);
+            User manager = new User(1, "manager1", "password123", "Manager");
+            when(AuthenticationMiddleware.getAuthenticatedManager(ctx)).thenReturn(manager);
+            when(expenseService.denyExpense(expenseId, manager.getId(), null)).thenReturn(true);
+            //Act
+            expenseController.denyExpense(ctx);
+            //Assert
+            mockedStatic.verify(()->AuthenticationMiddleware.getAuthenticatedManager(ctx), times(1));
+        }
+        //Assert
+        verify(ctx, times(1)).pathParamAsClass("expenseId", Integer.class);
+        verify(expenseService, times(1)).denyExpense(3, 1, null);
+        verify(ctx, times(1)).json(Map.of(
+                "success", true,
+                "message", "Expense denied successfully"
+        ));
+    }
 
+    @DisplayName("Test deny expense, expense not found")
+    @Test
+    public void testDenyExpense_ExpenseNotFound(){
+        //Arrange
+        int expenseId = 123456789;
+        when(ctx.pathParamAsClass("expenseId", Integer.class)).thenReturn(intValidator);
+        when(intValidator.get()).thenReturn(expenseId);
+        User manager = new User();
+        when(AuthenticationMiddleware.getAuthenticatedManager(ctx)).thenReturn(manager);
+        when(expenseService.denyExpense(expenseId, manager.getId(), null)).thenReturn(false);
+        //Act
+        NotFoundResponse ex = assertThrows(NotFoundResponse.class, ()->expenseController.denyExpense(ctx));
+        //Assert
+        assertEquals("Expense not found or could not be denied", ex.getMessage());
+    }
 
+    @DisplayName("Test deny expense, number format exception for expense id")
+    @Test
+    public void testDenyExpense_NumberFormatException(){
+        //Arrange
+        when(ctx.pathParamAsClass("expenseId", Integer.class)).thenReturn(intValidator);
+        when(intValidator.get()).thenThrow(NumberFormatException.class);
+        //Act/Assert
+        BadRequestResponse ex = assertThrows(BadRequestResponse.class, ()->expenseController.denyExpense(ctx));
+        assertEquals("Invalid expense ID format", ex.getMessage());
+    }
 
+    @DisplayName("Test deny expense, get authenticated manager returns null value")
+    @Test
+    public void testDenyExpense_GetAuthenticatedManagerFailure(){
+        //Arrange
+        int expenseId = 3;
+        when(ctx.pathParamAsClass("expenseId", Integer.class)).thenReturn(intValidator);
+        when(intValidator.get()).thenReturn(expenseId);
+        when(AuthenticationMiddleware.getAuthenticatedManager(ctx)).thenReturn(null);
+        //Act/Arrange
+        InternalServerErrorResponse ex = assertThrows(InternalServerErrorResponse.class, ()->expenseController.denyExpense(ctx));
+        assertTrue(ex.getMessage().contains("Failed to deny expense: "));
+    }
+
+    @DisplayName("Test deny expense, error during ctx.json")
+    @Test
+    public void testDenyExpense_jsonError(){
+        //Arrange
+        int expenseId = 3;
+        when(ctx.pathParamAsClass("expenseId", Integer.class)).thenReturn(intValidator);
+        when(intValidator.get()).thenReturn(expenseId);
+        User manager = new User(1, "manager1", "password123", "Manager");
+        when(AuthenticationMiddleware.getAuthenticatedManager(ctx)).thenReturn(manager);
+        when(expenseService.denyExpense(expenseId, manager.getId(), null)).thenReturn(true);
+        when(ctx.json(any())).thenThrow(InternalServerErrorResponse.class);
+        //Act/Assert
+        InternalServerErrorResponse ex = assertThrows(InternalServerErrorResponse.class, ()->expenseController.denyExpense(ctx));
+        assertTrue(ex.getMessage().contains("Failed to deny expense: "));
+    }
 
 }
