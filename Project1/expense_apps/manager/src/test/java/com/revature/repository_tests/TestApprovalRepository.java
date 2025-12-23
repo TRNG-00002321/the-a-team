@@ -49,6 +49,7 @@ public class TestApprovalRepository {
     /****************************************************************************************************
      * FIND BY EXPENSE ID TESTS                                                                                 *
      ****************************************************************************************************/
+    //MU-132
     @Test
     @DisplayName("Test findByExpenseId Throws Exception")
     public void testFindByExpenseId_databaseException() throws Exception {
@@ -67,6 +68,7 @@ public class TestApprovalRepository {
         assertInstanceOf(SQLException.class, exception.getCause());
     }
 
+    //MU-133
     @Test
     @DisplayName("Test findByExpenseId Returns Empty Optional")
     public void testFindByExpenseId_Empty() throws Exception {
@@ -83,6 +85,7 @@ public class TestApprovalRepository {
         assertTrue(result.isEmpty());
     }
 
+    //MU-134
     @Test
     @DisplayName("Test findByExpenseId Positive")
     public void testFindByExpenseId_Positive() throws Exception {
@@ -102,6 +105,7 @@ public class TestApprovalRepository {
     /****************************************************************************************************
      * UPDATE APPROVAL STATUS TESTS                                                                     *
      ****************************************************************************************************/
+    //MU-135
     @Test
     @DisplayName("Test updateApprovalStatus Throws Exception")
     public void testUpdateApprovalStatus_Exception() throws SQLException {
@@ -123,6 +127,7 @@ public class TestApprovalRepository {
         assertInstanceOf(SQLException.class, exception.getCause());
     }
 
+    //MU-136
     @Test
     @DisplayName("Test updateApprovalStatus Returns False")
     public void testUpdateApprovalStatus_False() throws SQLException {
@@ -140,6 +145,7 @@ public class TestApprovalRepository {
         assertFalse(result);
     }
 
+    //MU-137
     @Test
     @DisplayName("Test updateApprovalStatus Returns True")
     public void testUpdateApprovalStatus_True() throws SQLException {
@@ -157,6 +163,7 @@ public class TestApprovalRepository {
         assertTrue(result);
     }
 
+    //MU-138
     @Test
     @DisplayName("Test updateApprovalStatus Correct Fields")
     public void testUpdateApprovalStatus_CorrectFields() throws SQLException {
@@ -191,6 +198,7 @@ public class TestApprovalRepository {
     /****************************************************************************************************
      * CREATE APPROVAL TESTS                                                                            *
      ****************************************************************************************************/
+    //MU-139
     @Test
     @DisplayName("Test createApproval Throws Exception No Rows Updated")
     public void testCreateApproval_ExceptionNoRowsUpdated() throws SQLException {
@@ -217,6 +225,7 @@ public class TestApprovalRepository {
         verify(preparedStatement).setString(2, status);
     }
 
+    //MU-140
     @Test
     @DisplayName("Test createApproval Throws Exception No ID")
     public void testCreateApproval_ExceptionNoID() throws SQLException {
@@ -246,6 +255,7 @@ public class TestApprovalRepository {
         verify(preparedStatement).setString(2, status);
     }
 
+    //MU-141
     @Test
     @DisplayName("Test createApproval Positive")
     public void testCreateApproval_Positive() throws SQLException {
