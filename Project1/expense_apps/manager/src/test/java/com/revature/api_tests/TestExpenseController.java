@@ -13,6 +13,7 @@ import io.javalin.http.InternalServerErrorResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -316,4 +317,123 @@ public class TestExpenseController {
         assertTrue(ex.getMessage().contains("Failed to deny expense: "));
     }
 
+    @DisplayName("Test get all expenses, positive test")
+    @Test
+    public void testGetAllExpenses_Positive(){
+        //Arrange
+        ExpenseWithUser r1 = new ExpenseWithUser();
+        ExpenseWithUser r2 = new ExpenseWithUser();
+        ExpenseWithUser r3 = new ExpenseWithUser();
+        List<ExpenseWithUser> expenses = new ArrayList<ExpenseWithUser>(Arrays.asList(r1, r2, r3));
+        when(expenseService.getAllExpenses()).thenReturn(expenses);
+        //Act
+        expenseController.getAllExpenses(ctx);
+        //Assert
+        verify(expenseService, times(1)).getAllExpenses();
+        verify(ctx, times(1)).json(Map.of(
+                "success", true,
+                "data", expenses,
+                "count", expenses.size()
+        ));
+    }
+
+    @DisplayName("Test get all expense, empty list from service layer")
+    @Test
+    public void testGetAllExpenses_Empty(){
+        //Arrange
+        List<ExpenseWithUser> expenses = new ArrayList<ExpenseWithUser>();
+        when(expenseService.getAllExpenses()).thenReturn(expenses);
+        //Act
+        expenseController.getAllExpenses(ctx);
+        //Assert
+        verify(expenseService, times(1)).getAllExpenses();
+        verify(ctx, times(1)).json(Map.of(
+                "success", true,
+                "data", expenses,
+                "count", expenses.size()
+        ));
+    }
+
+    @DisplayName("Test get all expenses, null response from service layer")
+    @Test
+    public void testGetAllExpenses_Error(){
+        //Arrange
+        when(expenseService.getAllExpenses()).thenReturn(null);
+        //Act/Assert
+        InternalServerErrorResponse ex = assertThrows(InternalServerErrorResponse.class, ()->expenseController.getAllExpenses(ctx));
+        assertTrue(ex.getMessage().contains("Failed to retrieve expenses: "));
+        verify(expenseService, times(1)).getAllExpenses();
+    }
+
+    @DisplayName("Test get expenses by employee, positive test")
+    @Test
+    public void testGetExpensesByEmployee_Positive(){
+        //Arrange
+        int employeeId = 3;
+        when(ctx.pathParamAsClass("employeeId", Integer.class)).thenReturn(intValidator);
+        when(intValidator.get()).thenReturn(employeeId);
+
+        ExpenseWithUser r1 = new ExpenseWithUser();
+        ExpenseWithUser r2 = new ExpenseWithUser();
+        ExpenseWithUser r3 = new ExpenseWithUser();
+        List<ExpenseWithUser> expenses = new ArrayList<ExpenseWithUser>(Arrays.asList(r1, r2, r3));
+        when(expenseService.getExpensesByEmployee(employeeId)).thenReturn(expenses);
+        //Act
+        expenseController.getExpensesByEmployee(ctx);
+        //Assert
+        verify(expenseService, times(1)).getExpensesByEmployee(employeeId);
+        verify(ctx, times(1)).json(Map.of(
+                "success", true,
+                "data", expenses,
+                "count", expenses.size(),
+                "employeeId", employeeId
+        ));
+    }
+
+    @DisplayName("Test get expenses by employee, empty list from service layer")
+    @Test
+    public void testGetExpensesByEmployee_Empty(){
+        //Arrange
+        int employeeId = 3;
+        when(ctx.pathParamAsClass("employeeId", Integer.class)).thenReturn(intValidator);
+        when(intValidator.get()).thenReturn(employeeId);
+
+        List<ExpenseWithUser> expenses = new ArrayList<ExpenseWithUser>();
+        when(expenseService.getExpensesByEmployee(employeeId)).thenReturn(expenses);
+        //Act
+        expenseController.getExpensesByEmployee(ctx);
+        //Assert
+        verify(expenseService, times(1)).getExpensesByEmployee(employeeId);
+        verify(ctx, times(1)).json(Map.of(
+                "success", true,
+                "data", expenses,
+                "count", expenses.size(),
+                "employeeId", employeeId
+        ));
+    }
+
+    @DisplayName("Test get expenses by employee, null response from service layer")
+    @Test
+    public void testGetExpensesByEmployee_ServiceError(){
+        //Arrange
+        int employeeId = 3;
+        when(ctx.pathParamAsClass("employeeId", Integer.class)).thenReturn(intValidator);
+        when(intValidator.get()).thenReturn(employeeId);
+        when(expenseService.getExpensesByEmployee(employeeId)).thenReturn(null);
+        //Act/Assert
+        InternalServerErrorResponse ex = assertThrows(InternalServerErrorResponse.class, ()->expenseController.getExpensesByEmployee(ctx));
+        assertTrue(ex.getMessage().contains("Failed to retrieve expenses for employee: "));
+        verify(expenseService, times(1)).getExpensesByEmployee(employeeId);
+    }
+
+    @DisplayName("Test get expenses by employee, number format exception error")
+    @Test
+    public void testGetExpensesByEmployee_NumberFormatException(){
+        //Arrange
+        when(ctx.pathParamAsClass("employeeId", Integer.class)).thenReturn(intValidator);
+        when(intValidator.get()).thenThrow(NumberFormatException.class);
+        //Act/Assert
+        BadRequestResponse ex = assertThrows(BadRequestResponse.class, ()->expenseController.getExpensesByEmployee(ctx));
+        assertEquals("Invalid employee ID format", ex.getMessage());
+    }
 }
