@@ -92,7 +92,6 @@ public class TestGetAllExpenses {
       .executeUpdate();
   }
 
-
   // Maybe bug?
   @DisplayName("Get All Expense, Not Logged In")
   @Test
