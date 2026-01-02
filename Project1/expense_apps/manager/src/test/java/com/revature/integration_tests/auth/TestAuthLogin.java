@@ -1,11 +1,9 @@
 package com.revature.integration_tests.auth;
 
+import com.revature.TestDatabaseUtil;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import static io.restassured.RestAssured.given;
 
@@ -19,6 +17,11 @@ public class TestAuthLogin {
     @AfterAll
     static void tearDown(){
         RestAssured.reset();
+    }
+
+    @BeforeEach
+    void resetDatabase() {
+        TestDatabaseUtil.resetAndSeed();
     }
 
     //MI-221

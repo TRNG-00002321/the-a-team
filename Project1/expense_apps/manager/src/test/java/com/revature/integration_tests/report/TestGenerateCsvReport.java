@@ -1,5 +1,6 @@
 package com.revature.integration_tests.report;
 
+import com.revature.TestDatabaseUtil;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
@@ -20,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestGenerateCsvReport {
   static RequestSpecification requestSpec;
   static ResponseSpecification responseSpec;
-  private static Connection connection;
 
   @BeforeAll
   public static void setUp() throws SQLException {
@@ -36,61 +36,16 @@ public class TestGenerateCsvReport {
       .build();
 
     String url = "jdbc:sqlite:../employee/expense_manager.db";
-    connection = DriverManager.getConnection(url);
   }
 
   @AfterAll
   public static void tearDown() throws SQLException {
-    if (connection != null && !connection.isClosed()) {
-      connection.close();
-    }
     RestAssured.reset();
   }
 
   @BeforeEach
-  public void setUpDatabase() throws SQLException {
-    connection.prepareStatement("""
-        INSERT INTO users (id, username, password, role) VALUES
-        (997, 'employee997', 'password123', 'Employee'),
-        (998, 'employee998', 'password123', 'Employee'),
-        (999, 'manager999',  'password123', 'Manager')
-      """)
-      .executeUpdate();
-    connection.prepareStatement("""
-        INSERT INTO expenses (id, user_id, amount, description, date) VALUES
-        (901, 997, 25.50, 'Lunch with client', '2025-01-05'),
-        (902, 997, 120.00,'Hotel stay',        '2025-01-06'),
-        (903, 998, 15.75, 'Taxi to office',    '2025-01-07')
-      """)
-      .executeUpdate();
-    connection.prepareStatement("""
-        INSERT INTO approvals (id, expense_id, status, reviewer, comment, review_date) VALUES
-        (801, 901, 'approved', 999, 'Approved, valid expense', '2025-01-08'),
-        (802, 902, 'pending',  NULL, NULL,                   NULL),
-        (803, 903, 'denied',   999, 'Receipt missing',         '2025-01-09')
-      """)
-      .executeUpdate();
-  }
-
-  @AfterEach
-  void cleanupDatabase() throws SQLException {
-    connection.prepareStatement("""
-        DELETE FROM approvals
-        WHERE id IN (801, 802, 803)
-      """)
-      .executeUpdate();
-
-    connection.prepareStatement("""
-        DELETE FROM expenses
-        WHERE id IN (901, 902, 903)
-      """)
-      .executeUpdate();
-
-    connection.prepareStatement("""
-        DELETE FROM users
-        WHERE id IN (997, 998, 999)
-      """)
-      .executeUpdate();
+  void resetDatabase() {
+    TestDatabaseUtil.resetAndSeed();
   }
 
   @DisplayName("Get Expense Report, Logged In")
@@ -131,11 +86,13 @@ public class TestGenerateCsvReport {
     ));
 
     String[] lines = csv.split("\\R");
-    assertEquals(4, lines.length);
+    assertEquals(6, lines.length);
 
-    assertTrue(csv.contains("901,employee997,25.5"));
-    assertTrue(csv.contains("902,employee997,120.0"));
-    assertTrue(csv.contains("903,employee998,15.75"));
+    assertTrue(csv.contains("1,employee1,50.0"));
+    assertTrue(csv.contains("2,employee1,200.0"));
+    assertTrue(csv.contains("3,employee1,30.0"));
+    assertTrue(csv.contains("4,employee2,75.0"));
+    assertTrue(csv.contains("5,employee2,450.0"));
   }
 
   @DisplayName("Get Pending Expense Report, Logged In")
@@ -176,7 +133,7 @@ public class TestGenerateCsvReport {
     ));
 
     String[] lines = csv.split("\\R");
-    assertEquals(2, lines.length);
+    assertEquals(3, lines.length);
 
     assertTrue(csv.contains(",pending,"));
     assertFalse(csv.contains(",approved,"));
@@ -204,7 +161,7 @@ public class TestGenerateCsvReport {
         .extract().response();
     String jwtCookie = authResponse.getCookie("jwt");
 
-    int employeeId = 997;
+    int employeeId = 1;
 
     String csv =
       given()
@@ -223,10 +180,10 @@ public class TestGenerateCsvReport {
     ));
 
     String[] lines = csv.split("\\R");
-    assertEquals(3, lines.length);
+    assertEquals(4, lines.length);
 
     assertTrue(csv.contains(",employee" + employeeId + ","));;
-    assertFalse(csv.contains(",employee998,"));
+    assertFalse(csv.contains(",employee2,"));
   }
 
   @DisplayName("Get Date Range Expense Report, Logged In")
@@ -269,11 +226,12 @@ public class TestGenerateCsvReport {
     ));
 
     String[] lines = csv.split("\\R");
-    assertEquals(3, lines.length);
+    assertEquals(4, lines.length);
 
-    assertTrue(csv.contains(",2025-01-05,"));
+    assertTrue(csv.contains(",2025-01-05,"));;
     assertTrue(csv.contains(",2025-01-06,"));;
-    assertFalse(csv.contains(",2025-01-07,"));
+    assertFalse(csv.contains(",2025-01-07,"));;
+    assertFalse(csv.contains(",2025-01-09,"));
   }
 
   @DisplayName("Get Category Expense Report, Logged In")
@@ -319,8 +277,7 @@ public class TestGenerateCsvReport {
     assertEquals(2, lines.length);
 
     assertTrue(csv.contains(",Hotel stay,"));
-    assertTrue(csv.contains("902,"));;
-    assertFalse(csv.contains(",901,"));
-    assertFalse(csv.contains(",903,"));
+    assertTrue(csv.contains("1,"));;
+    assertFalse(csv.contains(",2,"));
   }
 }

@@ -1,9 +1,12 @@
 package com.revature.integration_tests.auth;
 
+import com.revature.TestDatabaseUtil;
 import io.restassured.RestAssured;
 import io.restassured.http.Cookie;
 import io.restassured.response.Response;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
@@ -14,6 +17,16 @@ public class TestLogout {
     static void setup() {
         RestAssured.baseURI = "http://localhost";
         RestAssured.port = 5001;
+    }
+
+    @AfterAll
+    public static void tearDown(){
+        RestAssured.reset();
+    }
+
+    @BeforeEach
+    void resetDatabase() {
+        TestDatabaseUtil.resetAndSeed();
     }
 
     // MI-212

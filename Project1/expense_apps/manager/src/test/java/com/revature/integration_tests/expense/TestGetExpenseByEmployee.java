@@ -1,7 +1,10 @@
 package com.revature.integration_tests.expense;
 
+import com.revature.TestDatabaseUtil;
 import io.restassured.RestAssured;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
@@ -12,6 +15,16 @@ public class TestGetExpenseByEmployee {
     static void setup() {
         RestAssured.baseURI = "http://localhost";
         RestAssured.port = 5001;
+    }
+
+    @AfterAll
+    public static void tearDown(){
+        RestAssured.reset();
+    }
+
+    @BeforeEach
+    void resetDatabase() {
+        TestDatabaseUtil.resetAndSeed();
     }
 
     private String loginAndGetJwtCookie() {

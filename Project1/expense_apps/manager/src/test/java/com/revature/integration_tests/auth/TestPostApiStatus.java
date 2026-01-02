@@ -1,5 +1,6 @@
 package com.revature.integration_tests.auth;
 
+import com.revature.TestDatabaseUtil;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
@@ -7,13 +8,9 @@ import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import io.restassured.specification.ResponseSpecification;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import static io.restassured.RestAssured.given;
-import static io.restassured.RestAssured.request;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,6 +35,11 @@ public class TestPostApiStatus {
     @AfterAll
     public static void tearDown(){
         RestAssured.reset();
+    }
+
+    @BeforeEach
+    void resetDatabase() {
+        TestDatabaseUtil.resetAndSeed();
     }
 
     @DisplayName("Get auth status, no manager has logged in yet")

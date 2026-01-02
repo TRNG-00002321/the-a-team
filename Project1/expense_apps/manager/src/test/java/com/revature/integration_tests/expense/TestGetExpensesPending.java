@@ -1,15 +1,13 @@
 package com.revature.integration_tests.expense;
 
+import com.revature.TestDatabaseUtil;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import io.restassured.specification.ResponseSpecification;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
@@ -55,6 +53,11 @@ public class TestGetExpensesPending {
     @AfterAll
     static void tearDown(){
         RestAssured.reset();
+    }
+
+    @BeforeEach
+    void resetDatabase() {
+        TestDatabaseUtil.resetAndSeed();
     }
 
     //MI-219

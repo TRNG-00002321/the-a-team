@@ -1,5 +1,6 @@
 package com.revature.integration_tests.expense;
 
+import com.revature.TestDatabaseUtil;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
@@ -39,6 +40,11 @@ public class TestPostDenyExpense {
         RestAssured.reset();
     }
 
+    @BeforeEach
+    void resetDatabase() {
+        TestDatabaseUtil.resetAndSeed();
+    }
+
     @Test
     @DisplayName("POST /api/expense/{id}/deny expense with valid login and valid expense")
     void testDenyExpense_AsManager_Positive() {
@@ -71,7 +77,6 @@ public class TestPostDenyExpense {
                         .when()
                         .post("/api/expenses/" + expenseId + "/deny")
                         .then()
-                        .log().all()
                         .statusCode(200)
                         .extract().response();
 
@@ -143,11 +148,8 @@ public class TestPostDenyExpense {
                 .then()
                 .statusCode(401)
                 .extract().response();
-
     }
-
-
-    }
+}
 
 
 

@@ -106,13 +106,17 @@
             <version>${cucumber.version}</version>
             <scope>test</scope>
         </dependency>
-
         <!-- Cucumber JUnit Platform Engine -->
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-junit-platform-engine</artifactId>
             <version>${cucumber.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.cdimascio</groupId>
+            <artifactId>dotenv-java</artifactId>
+            <version>3.2.0</version>
         </dependency>
     </dependencies>
 </project>

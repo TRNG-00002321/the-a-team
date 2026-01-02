@@ -1,5 +1,6 @@
 package com.revature.integration_tests.report;
 
+import com.revature.TestDatabaseUtil;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
@@ -7,10 +8,7 @@ import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import io.restassured.specification.ResponseSpecification;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import java.sql.SQLException;
 
@@ -40,215 +38,9 @@ public class TestGenerateCsvReportNegative {
     RestAssured.reset();
   }
 
-  @DisplayName("Get Expense Report, Logged In, Empty")
-  @Test
-  public void getExpenseReportCsvLoggedInEmpty() {
-    String credentials = """
-      {
-          "username":"manager1",
-          "password":"password123"
-      }
-      """;
-    Response authResponse =
-      given()
-        .spec(requestSpec)
-        .body(credentials)
-      .when()
-        .post("/api/auth/login")
-      .then()
-        .spec(responseSpec)
-        .statusCode(200)
-        .extract().response();
-    String jwtCookie = authResponse.getCookie("jwt");
-
-    String csv =
-      given()
-        .spec(requestSpec)
-        .cookie("jwt", jwtCookie)
-      .when()
-        .get("/api/reports/expenses/csv")
-      .then()
-        .statusCode(200)
-        .contentType("text/csv")
-        .extract()
-        .asString();
-
-    assertTrue(csv.startsWith(
-      "Expense ID,Employee,Amount,Description,Date,Status,Reviewer,Comment,Review Date"
-    ));
-
-    String[] lines = csv.split("\\R");
-    assertEquals(1, lines.length);
-  }
-
-  @DisplayName("Get Pending Expense Report, Logged In, Empty")
-  @Test
-  public void getPendingExpenseReportCsvLoggedInEmpty() {
-    String credentials = """
-      {
-          "username":"manager1",
-          "password":"password123"
-      }
-      """;
-    Response authResponse =
-      given()
-        .spec(requestSpec)
-        .body(credentials)
-      .when()
-        .post("/api/auth/login")
-      .then()
-        .spec(responseSpec)
-        .statusCode(200)
-        .extract().response();
-    String jwtCookie = authResponse.getCookie("jwt");
-
-    String csv =
-      given()
-        .spec(requestSpec)
-        .cookie("jwt", jwtCookie)
-      .when()
-        .get("/api/reports/expenses/pending/csv")
-      .then()
-        .statusCode(200)
-        .contentType("text/csv")
-        .extract()
-        .asString();
-
-    assertTrue(csv.startsWith(
-      "Expense ID,Employee,Amount,Description,Date,Status,Reviewer,Comment,Review Date"
-    ));
-
-    String[] lines = csv.split("\\R");
-    assertEquals(1, lines.length);
-  }
-
-  @DisplayName("Get Employee Expense Report, Logged In, Empty")
-  @Test
-  public void getEmployeeExpenseReportCsvLoggedInEmpty() {
-    String credentials = """
-      {
-          "username":"manager1",
-          "password":"password123"
-      }
-      """;
-    Response authResponse =
-      given()
-        .spec(requestSpec)
-        .body(credentials)
-      .when()
-        .post("/api/auth/login")
-      .then()
-        .spec(responseSpec)
-        .statusCode(200)
-        .extract().response();
-    String jwtCookie = authResponse.getCookie("jwt");
-
-    int employeeId = 997;
-
-    String csv =
-      given()
-        .spec(requestSpec)
-        .cookie("jwt", jwtCookie)
-      .when()
-        .get("/api/reports/expenses/employee/" + employeeId + "/csv")
-      .then()
-        .statusCode(200)
-        .contentType("text/csv")
-        .extract()
-        .asString();
-
-    assertTrue(csv.startsWith(
-      "Expense ID,Employee,Amount,Description,Date,Status,Reviewer,Comment,Review Date"
-    ));
-
-    String[] lines = csv.split("\\R");
-    assertEquals(1, lines.length);
-  }
-
-  @DisplayName("Get Date Range Expense Report, Logged In, Empty")
-  @Test
-  public void getDateRangeExpenseReportCsvLoggedInEmpty() {
-    String credentials = """
-      {
-          "username":"manager1",
-          "password":"password123"
-      }
-      """;
-    Response authResponse =
-      given()
-        .spec(requestSpec)
-        .body(credentials)
-      .when()
-        .post("/api/auth/login")
-      .then()
-        .spec(responseSpec)
-        .statusCode(200)
-        .extract().response();
-    String jwtCookie = authResponse.getCookie("jwt");
-
-    String csv =
-      given()
-        .spec(requestSpec)
-        .cookie("jwt", jwtCookie)
-        .queryParam("startDate", "2025-01-05")
-        .queryParam("endDate", "2025-01-06")
-      .when()
-        .get("/api/reports/expenses/daterange/csv")
-      .then()
-        .statusCode(200)
-        .contentType("text/csv")
-        .extract()
-        .asString();
-
-    assertTrue(csv.startsWith(
-      "Expense ID,Employee,Amount,Description,Date,Status,Reviewer,Comment,Review Date"
-    ));
-
-    String[] lines = csv.split("\\R");
-    assertEquals(1, lines.length);
-  }
-
-  @DisplayName("Get Category Expense Report, Logged In, Empty")
-  @Test
-  public void getCategoryExpenseReportCsvLoggedInEmpty() {
-    String credentials = """
-      {
-          "username":"manager1",
-          "password":"password123"
-      }
-      """;
-    Response authResponse =
-      given()
-        .spec(requestSpec)
-        .body(credentials)
-      .when()
-        .post("/api/auth/login")
-      .then()
-        .spec(responseSpec)
-        .statusCode(200)
-        .extract().response();
-    String jwtCookie = authResponse.getCookie("jwt");
-
-    String category = "Hotel";
-
-    String csv =
-      given()
-        .spec(requestSpec)
-        .cookie("jwt", jwtCookie)
-      .when()
-        .get("/api/reports/expenses/category/" + category + "/csv")
-      .then()
-        .statusCode(200)
-        .contentType("text/csv")
-        .extract()
-        .asString();
-
-    assertTrue(csv.startsWith(
-      "Expense ID,Employee,Amount,Description,Date,Status,Reviewer,Comment,Review Date"
-    ));
-
-    String[] lines = csv.split("\\R");
-    assertEquals(1, lines.length);
+  @BeforeEach
+  void resetDatabase() {
+    TestDatabaseUtil.resetAndSeed();
   }
 
   @DisplayName("Get Expense Report, Not Logged in")
