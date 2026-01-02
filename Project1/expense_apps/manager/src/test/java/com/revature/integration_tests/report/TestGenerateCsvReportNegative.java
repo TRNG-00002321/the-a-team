@@ -1,6 +1,6 @@
 package com.revature.integration_tests.report;
 
-import com.revature.TestDatabaseUtil;
+import com.revature.utils.TestDatabaseUtil;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
@@ -14,7 +14,6 @@ import java.sql.SQLException;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.jupiter.api.Assertions.*;
 
 public class TestGenerateCsvReportNegative {
   static RequestSpecification requestSpec;

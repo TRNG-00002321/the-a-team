@@ -1,4 +1,4 @@
-package com.revature;
+package com.revature.utils;
 
 import com.revature.repository.DatabaseConnection;
 

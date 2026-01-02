@@ -1,6 +1,6 @@
 package com.revature.integration_tests.auth;
 
-import com.revature.TestDatabaseUtil;
+import com.revature.utils.TestDatabaseUtil;
 import io.restassured.RestAssured;
 import io.restassured.http.Cookie;
 import io.restassured.response.Response;

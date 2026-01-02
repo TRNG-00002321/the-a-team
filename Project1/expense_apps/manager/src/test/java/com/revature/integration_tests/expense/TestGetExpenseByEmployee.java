@@ -1,6 +1,6 @@
 package com.revature.integration_tests.expense;
 
-import com.revature.TestDatabaseUtil;
+import com.revature.utils.TestDatabaseUtil;
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

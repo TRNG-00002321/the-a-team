@@ -13,6 +13,7 @@ public abstract class BasePage {
     protected WebDriver driver;
     protected WebDriverWait wait;
     protected static final int DEFAULT_TIMEOUT = 10;
+    private String BASE_URL = "http://localhost:5001/";
 
     public BasePage(){
     }
@@ -20,6 +21,10 @@ public abstract class BasePage {
     public BasePage(WebDriver driver) {
         this.driver = driver;
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(DEFAULT_TIMEOUT));
+    }
+
+    public void navigateTo(String path){
+        driver.get(BASE_URL+path);
     }
 
     // Wait for element to be visible and return it

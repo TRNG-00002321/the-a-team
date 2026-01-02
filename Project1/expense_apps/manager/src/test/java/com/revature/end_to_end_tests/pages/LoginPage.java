@@ -21,7 +21,7 @@ public class LoginPage extends BasePage{
     private WebElement loginButton;
 
     public LoginPage(WebDriver driver){
-        this.driver = driver;
+        super(driver);
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(DEFAULT_TIMEOUT));
         PageFactory.initElements(driver, this);
     }

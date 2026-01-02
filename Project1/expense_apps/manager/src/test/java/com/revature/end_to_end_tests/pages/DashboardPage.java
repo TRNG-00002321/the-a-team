@@ -23,7 +23,7 @@ public class DashboardPage extends BasePage{
     private WebElement logoutButton;
 
     public DashboardPage(WebDriver driver){
-        this.driver = driver;
+        super(driver);
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(DEFAULT_TIMEOUT));
         PageFactory.initElements(driver, this);
     }

@@ -1,6 +1,6 @@
 package com.revature.integration_tests.report;
 
-import com.revature.TestDatabaseUtil;
+import com.revature.utils.TestDatabaseUtil;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
@@ -10,8 +10,6 @@ import io.restassured.specification.RequestSpecification;
 import io.restassured.specification.ResponseSpecification;
 import org.junit.jupiter.api.*;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 
 import static io.restassured.RestAssured.given;

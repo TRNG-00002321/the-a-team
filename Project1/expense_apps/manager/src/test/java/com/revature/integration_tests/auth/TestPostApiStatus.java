@@ -1,6 +1,6 @@
 package com.revature.integration_tests.auth;
 
-import com.revature.TestDatabaseUtil;
+import com.revature.utils.TestDatabaseUtil;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
