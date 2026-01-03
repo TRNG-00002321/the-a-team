@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 from src.repository import DatabaseConnection
 from tests.end_to_end_test.drivers.browser_manager import create_driver
 
@@ -10,6 +11,7 @@ SEED_SQL_PATH = os.path.abspath(
 
 def before_all(context):
     # Read DB path from environment
+    load_dotenv()
     db_path = os.getenv("DATABASE_PATH")
     if not db_path:
         raise RuntimeError(
@@ -27,7 +29,6 @@ def before_all(context):
 def after_all(context):
     pass
 
-
 def before_scenario(context, scenario):
     # --- Reset & reseed database ---
     with context.db.get_connection() as conn:
@@ -41,8 +42,8 @@ def before_scenario(context, scenario):
         conn.commit()
 
     # --- Browser setup ---
-    browser = context.config.userdata.get("browser", "chrome")
-    headless = context.config.userdata.get("headless", "false").lower() == "true"
+    browser = os.getenv("BROWSER", "chrome").lower()
+    headless = os.getenv("headless", "false").lower() == "true"
 
     context.driver = create_driver(browser, headless)
     context.driver.maximize_window()
