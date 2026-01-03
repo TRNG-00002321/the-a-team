@@ -4,14 +4,12 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 
 public class DashboardPage extends BasePage{
-    protected WebDriver driver;
-    protected WebDriverWait wait;
-    protected static final int DEFAULT_TIMEOUT = 10;
 
     @FindBy(id="show-pending")
     private WebElement pendingExpensesButon;
@@ -29,18 +27,22 @@ public class DashboardPage extends BasePage{
     }
 
     public void goToPendingExpensesScreen(){
+        wait.until(ExpectedConditions.elementToBeClickable(pendingExpensesButon));
         pendingExpensesButon.click();
     }
 
     public void goToAllExpensesScreen(){
+        wait.until(ExpectedConditions.elementToBeClickable(allExpensesButton));
         allExpensesButton.click();
     }
 
     public void goToGenerateReportsScreen(){
+        wait.until(ExpectedConditions.elementToBeClickable(generateReportsButton));
         generateReportsButton.click();
     }
 
     public LoginPage logout(){
+        wait.until(ExpectedConditions.elementToBeClickable(logoutButton));
         logoutButton.click();
         return new LoginPage(this.driver);
     }

@@ -13,6 +13,6 @@ INSERT INTO expenses (id, user_id, amount, description, date) VALUES
 INSERT INTO approvals (id, expense_id, status, reviewer, comment, review_date) VALUES
     (1, 1, 'pending',  NULL, NULL, NULL),
     (2, 2, 'approved', 3, 'Approved', '2025-01-07'),
-    (3, 3, 'rejected', 3, 'Not reimbursable', '2025-01-07'),
+    (3, 3, 'denied', 3, 'Not reimbursable', '2025-01-07'),
     (4, 4, 'pending',  NULL, NULL, NULL),
     (5, 5, 'approved', 3, 'Business travel', '2025-01-09');

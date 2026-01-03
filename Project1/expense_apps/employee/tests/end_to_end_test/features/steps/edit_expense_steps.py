@@ -32,7 +32,7 @@ def step_impl(context):
     raise StepNotImplementedError(u'When the employee clicks the update expense button')
 
 
-@then(u'the employee sees the message: "Expense updated successfully!"')
+@then(u'the employee sees the edit message: "Expense updated successfully!"')
 def step_impl(context):
     raise StepNotImplementedError(u'Then the employee sees the message: "Expense updated successfully!"')
 

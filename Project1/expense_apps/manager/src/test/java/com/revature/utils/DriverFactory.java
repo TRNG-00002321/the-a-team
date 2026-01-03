@@ -9,7 +9,7 @@ import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.edge.EdgeOptions;
 
-import java.time.Duration;
+import java.util.Map;
 
 public class DriverFactory {
 
@@ -24,6 +24,11 @@ public class DriverFactory {
                 if (headless) {
                     options.addArguments("--headless=new");
                 }
+
+                options.setExperimentalOption(
+                        "prefs",
+                        Map.of("profile.password_manager_leak_detection", false)
+                );
                 driver = new ChromeDriver(options);
             }
 

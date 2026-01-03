@@ -1,122 +1,132 @@
 package com.revature.end_to_end_tests.steps;
 
 import com.revature.end_to_end_tests.context.TestContext;
-import com.revature.end_to_end_tests.hooks.Hooks;
+import com.revature.end_to_end_tests.pages.DashboardPage;
 import com.revature.end_to_end_tests.pages.LoginPage;
-import io.cucumber.java.PendingException;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class AuthSteps {
-    TestContext context;
-    LoginPage loginPage;
+    private final TestContext context;
+    private LoginPage loginPage;
+    private DashboardPage dashboardPage;
 
-    public AuthSteps(){
-        context = TestContext.getInstance();
+    public AuthSteps(TestContext context){
+        this.context = context;
     }
 
     @Given("the application is running")
     public void theApplicationIsRunning() {
-        // Write code here that turns the phrase above into concrete actions
-        loginPage = context.getLoginPage();
-        loginPage.navigateTo("/");
-        String currentUrl = loginPage.getCurrentUrl();
-        System.out.println(currentUrl);
-        assertTrue(currentUrl.contains("5001"));
+        assertNotNull(context.getDriver(), "WebDriver should be initialized");
     }
 
     @And("the test database is already seeded with users")
     public void theTestDatabaseIsAlreadySeededWithUsers() {
         // Write code here that turns the phrase above into concrete actions
-        throw new PendingException();
+        assertTrue(true);
     }
 
     @Given("the manager is on the login screen")
     public void theManagerIsOnTheLoginScreen() {
         // Write code here that turns the phrase above into concrete actions
-        throw new PendingException();
+        loginPage = context.getLoginPage();
+        assertNotNull(loginPage, "LoginPage should not be null");
     }
 
     @When("the manager enters username {string}")
-    public void theManagerEntersUsername(String arg0) {
+    public void theManagerEntersUsername(String username) {
         // Write code here that turns the phrase above into concrete actions
-        throw new PendingException();
+        loginPage.enterUsername(username);
     }
 
     @And("the manager enters password {string}")
-    public void theManagerEntersPassword(String arg0) {
+    public void theManagerEntersPassword(String password) {
         // Write code here that turns the phrase above into concrete actions
-        throw new PendingException();
+        loginPage.enterPassword(password);
     }
 
     @And("the manager clicks the login button")
     public void theManagerClicksTheLoginButton() {
         // Write code here that turns the phrase above into concrete actions
-        throw new PendingException();
+        dashboardPage = loginPage.clickLogin();
     }
 
     @Then("the manager sees the message: {string}")
     public void theManagerSeesTheMessage(String arg0) {
         // Write code here that turns the phrase above into concrete actions
-        throw new PendingException();
+        WebElement message = loginPage.waitForElement(By.id("login-message"));
+        assertTrue(message.getText().contains(arg0));
     }
 
     @And("the manager is redirected to the manager dashboard")
     public void theManagerIsRedirectedToTheManagerDashboard() {
         // Write code here that turns the phrase above into concrete actions
-        throw new PendingException();
+        WebElement title = dashboardPage.waitForElement(
+                By.xpath("//h1[normalize-space()='Manager Expense Dashboard']"));
+
+        assertTrue(title.getText().contains("Manager Expense Dashboard"));
     }
 
     @Then("the manager is not redirected to the dashboard")
     public void theManagerIsNotRedirectedToTheDashboard() {
         // Write code here that turns the phrase above into concrete actions
-        throw new PendingException();
+        assertNotEquals("Manager Expense Dashboard", context.getDriver().getTitle());
     }
 
     @When("the manager does not input any value for username")
     public void theManagerDoesNotInputAnyValueForUsername() {
         // Write code here that turns the phrase above into concrete actions
-        throw new PendingException();
+        loginPage.enterUsername("");
+        loginPage.enterPassword("password123");
     }
 
     @Then("the username field is selected")
     public void theUsernameFieldIsSelected() {
         // Write code here that turns the phrase above into concrete actions
-        throw new PendingException();
+        WebElement active = context.getDriver().switchTo().activeElement();
+        WebElement username = loginPage.waitForElement(By.id("username"));
+
+        assertEquals(username, active);
     }
 
     @When("the manager does not input any value for the password")
     public void theManagerDoesNotInputAnyValueForThePassword() {
         // Write code here that turns the phrase above into concrete actions
-        throw new PendingException();
+        loginPage.enterUsername("manager1");
+        loginPage.enterPassword("");
     }
 
     @Then("the password field is selected")
     public void thePasswordFieldIsSelected() {
         // Write code here that turns the phrase above into concrete actions
-        throw new PendingException();
+        WebElement active = context.getDriver().switchTo().activeElement();
+        WebElement password = loginPage.waitForElement(By.id("password"));
+
+        assertEquals(password, active);
     }
 
     @Given("the manager is logged in")
     public void theManagerIsLoggedIn() {
         // Write code here that turns the phrase above into concrete actions
-        throw new PendingException();
+        loginPage = context.getLoginPage();
+        dashboardPage = loginPage.login("manager1","password123");
     }
 
     @When("the manager clicks the logout button")
     public void theManagerClicksTheLogoutButton() {
         // Write code here that turns the phrase above into concrete actions
-        throw new PendingException();
+        dashboardPage.logout();
     }
 
     @Then("the manager is redirected to the login page")
     public void theManagerIsRedirectedToTheLoginPage() {
         // Write code here that turns the phrase above into concrete actions
-        throw new PendingException();
+        assertEquals("Manager Login - Expense Manager", context.getDriver().getTitle());
     }
 }

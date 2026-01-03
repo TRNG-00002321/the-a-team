@@ -17,11 +17,14 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ViewExpenseSteps {
-    private WebDriver driver;
+    private final TestContext context;
+    private LoginPage loginPage;
     private DashboardPage dashboardPage;
+    private WebDriver driver;
 
-    public ViewExpenseSteps() {
-        this.driver = TestContext.getInstance().getDriver();
+    public ViewExpenseSteps(TestContext context){
+        this.context = context;
+        this.driver = context.getDriver();
     }
 
     @Given("the manager is on the all expenses screen")

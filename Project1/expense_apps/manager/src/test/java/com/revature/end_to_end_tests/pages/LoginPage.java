@@ -4,14 +4,12 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 
 public class LoginPage extends BasePage{
-    protected WebDriver driver;
-    protected WebDriverWait wait;
-    protected static final int DEFAULT_TIMEOUT = 10;
 
     @FindBy(id="username")
     private WebElement usernameField;
@@ -27,21 +25,25 @@ public class LoginPage extends BasePage{
     }
 
     public void enterUsername(String username) {
+        wait.until(ExpectedConditions.visibilityOf(usernameField));
         usernameField.clear();
         usernameField.sendKeys(username);
     }
 
     public void enterPassword(String password) {
+        wait.until(ExpectedConditions.visibilityOf(passwordField));
         passwordField.clear();
         passwordField.sendKeys(password);
     }
 
     public DashboardPage clickLogin() {
+        wait.until(ExpectedConditions.elementToBeClickable(loginButton));
         loginButton.click();
         return new DashboardPage(this.driver);
     }
 
     public LoginPage clickLoginExpectingError(){
+        wait.until(ExpectedConditions.elementToBeClickable(loginButton));
         loginButton.click();
         return this;
     }
@@ -51,6 +53,4 @@ public class LoginPage extends BasePage{
         enterPassword(password);
         return clickLogin();
     }
-
-
 }

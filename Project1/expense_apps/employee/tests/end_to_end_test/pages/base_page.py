@@ -1,15 +1,17 @@
 from abc import ABC
-from selenium import webdriver
 from selenium.common import NoSuchElementException
-from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # locators are tuples containing a 'By' object and a string
 class BasePage(ABC):
+    BASE_URL = "http://localhost:5000"
     def __init__(self, driver):
         self.driver = driver
         self.wait = WebDriverWait(self.driver, 10)
+
+    def open(self):
+        self.driver.get(self.BASE_URL)
 
     def wait_for_element(self, locator):
         return self.wait.until(EC.presence_of_element_located(locator))
@@ -40,3 +42,6 @@ class BasePage(ABC):
 
     def get_current_url(self):
         return self.driver.current_url
+
+    def wait_for_url_contains(self, text):
+        self.wait.until(EC.url_contains(text))
