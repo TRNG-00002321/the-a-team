@@ -6,11 +6,6 @@ import com.revature.utils.DriverFactory;
 import com.revature.utils.TestDatabaseUtil;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
-import io.github.bonigarcia.wdm.WebDriverManager;
-
-import java.time.Duration;
 
 
 public class TestContext {
