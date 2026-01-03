@@ -19,7 +19,8 @@ def test_client():
     os.makedirs(os.path.dirname(TEST_DB_PATH), exist_ok=True)
 
     # Set DB path BEFORE app creation
-    os.environ["DATABASE_PATH"] = TEST_DB_PATH
+    os.environ["TEST_MODE"] = "true"
+    os.environ["TEST_DATABASE_PATH"] = TEST_DB_PATH
 
     # Initialize schema once
     db = DatabaseConnection()

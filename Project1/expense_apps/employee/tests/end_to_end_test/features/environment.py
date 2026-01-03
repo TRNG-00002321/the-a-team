@@ -43,7 +43,7 @@ def before_scenario(context, scenario):
 
     # --- Browser setup ---
     browser = os.getenv("BROWSER", "chrome").lower()
-    headless = os.getenv("headless", "false").lower() == "true"
+    headless = os.getenv("HEADLESS", "false").lower() == "true"
 
     context.driver = create_driver(browser, headless)
     context.driver.maximize_window()
