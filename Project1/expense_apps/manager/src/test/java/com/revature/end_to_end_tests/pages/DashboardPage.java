@@ -27,14 +27,17 @@ public class DashboardPage extends BasePage{
     }
 
     public void goToPendingExpensesScreen(){
+        wait.until(ExpectedConditions.visibilityOf(pendingExpensesButon));
         pendingExpensesButon.click();
     }
 
     public void goToAllExpensesScreen(){
+        wait.until(ExpectedConditions.visibilityOf(allExpensesButton));
         allExpensesButton.click();
     }
 
     public void goToGenerateReportsScreen(){
+        wait.until(ExpectedConditions.visibilityOf(generateReportsButton));
         generateReportsButton.click();
     }
 
