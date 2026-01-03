@@ -1,5 +1,8 @@
 package com.revature.end_to_end_tests.steps;
 
+import com.revature.end_to_end_tests.context.TestContext;
+import com.revature.end_to_end_tests.pages.DashboardPage;
+import com.revature.end_to_end_tests.pages.LoginPage;
 import io.cucumber.java.PendingException;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -7,6 +10,14 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 public class ReviewExpenseSteps {
+    private final TestContext context;
+    private LoginPage loginPage;
+    private DashboardPage dashboardPage;
+
+    public ReviewExpenseSteps(TestContext context){
+        this.context = context;
+    }
+
     @Given("the manager is on the pending expenses screen")
     public void theManagerIsOnThePendingExpensesScreen() {
         // Write code here that turns the phrase above into concrete actions

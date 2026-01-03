@@ -9,9 +9,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import java.time.Duration;
 
 public class LoginPage extends BasePage{
-    protected WebDriver driver;
-    protected WebDriverWait wait;
-    protected static final int DEFAULT_TIMEOUT = 10;
 
     @FindBy(id="username")
     private WebElement usernameField;
@@ -51,6 +48,4 @@ public class LoginPage extends BasePage{
         enterPassword(password);
         return clickLogin();
     }
-
-
 }
