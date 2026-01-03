@@ -4,14 +4,12 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 
 public class DashboardPage extends BasePage{
-    protected WebDriver driver;
-    protected WebDriverWait wait;
-    protected static final int DEFAULT_TIMEOUT = 10;
 
     @FindBy(id="show-pending")
     private WebElement pendingExpensesButon;
@@ -41,6 +39,7 @@ public class DashboardPage extends BasePage{
     }
 
     public LoginPage logout(){
+        wait.until(ExpectedConditions.visibilityOf(logoutButton));
         logoutButton.click();
         return new LoginPage(this.driver);
     }
