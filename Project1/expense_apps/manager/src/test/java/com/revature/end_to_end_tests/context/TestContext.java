@@ -10,7 +10,6 @@ import org.openqa.selenium.WebDriver;
 
 public class TestContext {
 
-    private static TestContext instance;
     private WebDriver driver;
 
     // Page Objects

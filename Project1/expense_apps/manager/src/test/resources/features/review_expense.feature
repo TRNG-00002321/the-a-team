@@ -10,13 +10,13 @@ Background:
 
 Scenario Outline: Review expense
   Given the manager is on the pending expenses screen
-  And an expense with id: "1", date: "2025-12-30", amount: "150", and description: "Hotel Stay" is pending
-  When the manager clicks the review button for an expense with id: "1", date: "2025-12-30", amount: "150", and description: "Hotel Stay"
+  And an expense with id: "1", date: "2025-01-05", amount: "50", and description: "Client lunch" is pending
+  When the manager clicks the review button for an expense with id: "1", date: "2025-01-05", amount: "50", and description: "Client lunch"
   And the manager inputs in the comment box: "<comment>"
   And the manager clicks the "<action>" button
   Then the manager sees a message containing "<message>"
   And the manager clicks the all expenses button
-  And an expense with id: "1", date: "2025-12-30", amount: "150", and description: "Hotel Stay" is shown as "<action>", with comment "<comment>"
+  And an expense with id: "1", date: "2025-01-05", amount: "50", and description: "Client lunch" is shown as "<action>", with comment "<comment>"
 
   Examples:
     | action      | message                           | comment          |
@@ -27,8 +27,8 @@ Scenario Outline: Review expense
 
 Scenario: Cancel expense review
   Given the manager is on the pending expenses screen
-  And an expense with id: "1", date: "2025-12-30", amount: "150", and description: "Hotel Stay" is pending
-  When the manager clicks the review button for an expense with id: "1", date: "2025-12-30", amount: "150", and description: "Hotel Stay"
+  And an expense with id: "1", date: "2025-01-05", amount: "50", and description: "Client lunch" is pending
+  When the manager clicks the review button for an expense with id: "1", date: "2025-01-05", amount: "50", and description: "Client lunch"
   And the manager cancels the review
   Then the manager should stay on the pending expenses screen
-  And an expense with id: "1", date: "2025-12-30", amount: "150", and description: "Hotel Stay" is pending
+  And an expense with id: "1", date: "2025-01-05", amount: "50", and description: "Client lunch" is pending
