@@ -3,7 +3,6 @@ package com.revature.end_to_end_tests.steps;
 import com.revature.end_to_end_tests.context.TestContext;
 import com.revature.end_to_end_tests.pages.DashboardPage;
 import com.revature.end_to_end_tests.pages.LoginPage;
-import io.cucumber.java.PendingException;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -18,7 +17,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ViewExpenseSteps {
     private final TestContext context;
-    private LoginPage loginPage;
     private DashboardPage dashboardPage;
     private WebDriver driver;
 
@@ -66,7 +64,6 @@ public class ViewExpenseSteps {
 
     @Then("the manager is shown {string} expenses for user {string}")
     public void theManagerIsShownCountExpensesForUserId(String arg0, String arg1) {
-//        List<WebElement> rows = driver.findElements(By.tagName("tr")); “//input[@id=’username’]”
         List<WebElement> rows = driver.findElements(By.xpath("//td[text()='employee" + arg1 + " (ID: " + arg1 + ")']"));
         assertEquals(rows.size(), Integer.parseInt(arg0) + 1);
     }

@@ -1,7 +1,7 @@
-import pytest
-from behave.api.pending_step import StepNotImplementedError
+import time
+
 from behave import given, when, then
-from selenium.common import NoSuchElementException, TimeoutException
+from selenium.common import TimeoutException, StaleElementReferenceException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -38,26 +38,49 @@ def description_shown(context, description):
 
 @given('the expense with description "{description}" is pending')
 def expense_is_pending(context, description):
-    try:
-        element = WebDriverWait(context.driver, 10).until(
-            EC.presence_of_element_located((By.XPATH,
-                f"//td[normalize-space()='{description}']/parent::tr/td[normalize-space()='PENDING']"))
-        )
-        assert element.is_displayed()
-    except TimeoutException:
-        raise AssertionError(f"Expense with description '{description}' was not pending")
+    xpath = f"//td[normalize-space()='{description}']/parent::tr/td[normalize-space()='PENDING']"
+    timeout = 10
+    poll_frequency = 0.5
+    start_time = time.time()
+
+    while True:
+        try:
+            element = WebDriverWait(context.driver, timeout).until(
+                EC.visibility_of_element_located((By.XPATH, xpath))
+            )
+            assert element.is_displayed()
+            break  # success
+        except StaleElementReferenceException:
+            if time.time() - start_time > timeout:
+                raise AssertionError(f"Expense '{description}' was not pending (stale element)")
+            time.sleep(poll_frequency)
+        except TimeoutException:
+            raise AssertionError(f"Expense '{description}' was not pending (not found)")
 
 
 @when('the employee clicks the delete button for the expense with description "{description}"')
 def click_delete(context, description):
-    try:
-        element = WebDriverWait(context.driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH,
-                f"//td[normalize-space()='{description}']/parent::tr//button[normalize-space()='Delete']"))
-        )
-        element.click()
-    except TimeoutException:
-        raise AssertionError(f"Delete button for '{description}' was not clickable")
+    xpath = f"//td[normalize-space()='{description}']/parent::tr//button[normalize-space()='Delete']"
+    timeout = 10
+    poll_frequency = 0.5  # How often to retry
+    end_time = WebDriverWait(context.driver, timeout).until(lambda d: True)  # just to calculate end_time
+
+    # Retry loop to handle StaleElementReferenceException
+    import time
+    start = time.time()
+    while True:
+        try:
+            element = WebDriverWait(context.driver, timeout).until(
+                EC.element_to_be_clickable((By.XPATH, xpath))
+            )
+            element.click()
+            break  # success
+        except StaleElementReferenceException:
+            if time.time() - start > timeout:
+                raise AssertionError(f"Delete button for '{description}' could not be clicked due to stale element")
+            time.sleep(poll_frequency)
+        except TimeoutException:
+            raise AssertionError(f"Delete button for '{description}' was not clickable")
 
 
 @when('the employee clicks ok for the confirmation alert')
@@ -101,30 +124,6 @@ def expense_deletion_confirmation(context, description):
         )
     except TimeoutException:
         raise AssertionError(f"Expense '{description}' was still found, deletion failed")
-    # with pytest.raises(NoSuchElementException) as excinfo:
-    #     context.driver.find_element(By.XPATH, f"//td[normalize-space()='{description}']")
-    #
-    # assert excinfo.type == NoSuchElementException
-
-
-# @given(u'an expense with the description: "Travel Expenses" is shown')
-# def step_impl(context):
-#     element = context.driver.find_element(By.XPATH, "//td[text()='Travel Expenses']")
-#     assert element.is_displayed()
-
-
-# @given(u'the expense with description "Travel Expenses" is pending')
-# def step_impl(context):
-#     element = context.driver.find_element(By.XPATH,
-#                 "//td[normalize-space()='Travel Expenses']/parent::tr/td[normalize-space()='PENDING']")
-#     assert element.is_displayed()
-
-
-# @when(u'the employee clicks the delete button for the expense with description "Travel Expenses"')
-# def step_impl(context):
-#     element = context.driver.find_element(By.XPATH,
-#                 "//td[normalize-space()='Travel Expenses']/parent::tr//button[normalize-space()='Delete']")
-#     element.click()
 
 
 @when('the employee clicks cancel for the confirmation alert')
