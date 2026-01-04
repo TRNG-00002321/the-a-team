@@ -8,11 +8,13 @@ INSERT INTO expenses (id, user_id, amount, description, date) VALUES
     (2, 1, 200.00, 'Hotel stay',      '2025-01-06'),
     (3, 1, 30.00,  'Parking fee',     '2025-01-07'),
     (4, 2, 75.00,  'Office supplies', '2025-01-05'),
-    (5, 2, 450.00, 'Flight ticket',   '2025-01-08');
+    (5, 2, 450.00, 'Flight ticket',   '2025-01-08'),
+    (6, 1, 200.00, 'Travel Expenses', '2025-01-07');
 
 INSERT INTO approvals (id, expense_id, status, reviewer, comment, review_date) VALUES
     (1, 1, 'pending',  NULL, NULL, NULL),
     (2, 2, 'approved', 3, 'Approved', '2025-01-07'),
     (3, 3, 'denied', 3, 'Not reimbursable', '2025-01-07'),
     (4, 4, 'pending',  NULL, NULL, NULL),
-    (5, 5, 'approved', 3, 'Business travel', '2025-01-09');
+    (5, 5, 'approved', 3, 'Business travel', '2025-01-09'),
+    (6, 6, 'pending', NULL, NULL, NULL);

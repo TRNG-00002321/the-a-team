@@ -49,7 +49,7 @@ def expense_is_pending(context, description):
                 EC.visibility_of_element_located((By.XPATH, xpath))
             )
             assert element.is_displayed()
-            break  # success
+            break
         except StaleElementReferenceException:
             if time.time() - start_time > timeout:
                 raise AssertionError(f"Expense '{description}' was not pending (stale element)")
@@ -62,11 +62,9 @@ def expense_is_pending(context, description):
 def click_delete(context, description):
     xpath = f"//td[normalize-space()='{description}']/parent::tr//button[normalize-space()='Delete']"
     timeout = 10
-    poll_frequency = 0.5  # How often to retry
-    end_time = WebDriverWait(context.driver, timeout).until(lambda d: True)  # just to calculate end_time
+    poll_frequency = 0.5
+    end_time = WebDriverWait(context.driver, timeout).until(lambda d: True)
 
-    # Retry loop to handle StaleElementReferenceException
-    import time
     start = time.time()
     while True:
         try:
@@ -74,7 +72,7 @@ def click_delete(context, description):
                 EC.element_to_be_clickable((By.XPATH, xpath))
             )
             element.click()
-            break  # success
+            break
         except StaleElementReferenceException:
             if time.time() - start > timeout:
                 raise AssertionError(f"Delete button for '{description}' could not be clicked due to stale element")
