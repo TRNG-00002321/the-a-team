@@ -63,8 +63,13 @@ def expense_is_shown_updated(context, amount, desc, date):
     refresh_button_locator = (By.ID, "refresh-expenses")
     refresh_button = context.dashboard_page.wait_for_clickable(refresh_button_locator)
     refresh_button.click()
-    time.sleep(1)
-    # get the row with specified fields
+    # wait for all new elements to exist first
+    context.dashboard_page.wait_for_element((By.XPATH, f"//td[contains(text(), '${amount}')]"))
+    context.dashboard_page.wait_for_element((By.XPATH, f"//td[contains(text(), '{desc}')]"))
+    context.dashboard_page.wait_for_element((By.XPATH, f"//td[contains(text(), '{date}')]"))
+    context.dashboard_page.wait_for_element((By.XPATH, f"//td[contains(text(), 'PENDING')]"))
+    #time.sleep(1)
+    # find the specific row with specified fields
     rows = context.driver.find_elements(By.TAG_NAME, "tr")
     found = False
     expected_amount = "$"+amount
@@ -81,42 +86,6 @@ def expense_is_shown_updated(context, amount, desc, date):
             found = True
             break
     assert found
-
-
-#@when(u'the employee inputs into the amount field: 999')
-#def step_impl(context):
-#    raise StepNotImplementedError(u'When the employee inputs into the amount field: 999')
-
-
-#@when(u'the employee inputs into the description field: fix door')
-#def step_impl(context):
-#    raise StepNotImplementedError(u'When the employee inputs into the description field: fix door')
-
-
-#@when(u'the employee inputs into the date field: 2025-10-10')
-#def step_impl(context):
-#    raise StepNotImplementedError(u'When the employee inputs into the date field: 2025-10-10')
-
-
-#@then(u'the expense is updated with the given 999, fix door, and 2025-10-10')
-#def step_impl(context):
-#    raise StepNotImplementedError(u'Then the expense is updated with the given 999, fix door, and 2025-10-10')
-
-
-#@when(u'the employee inputs into the amount field: "999999"')
-#def step_impl(context):
-#    raise StepNotImplementedError(u'When the employee inputs into the amount field: "999999"')
-
-
-#@when(u'the employee inputs into the description field: "wont be updated"')
-#def step_impl(context):
-#    raise StepNotImplementedError(u'When the employee inputs into the description field: "wont be updated"')
-
-
-#@when(u'the employee inputs into the date field: "2025-12-30"')
-#def step_impl(context):
-#    raise StepNotImplementedError(u'When the employee inputs into the date field: "2025-12-30"')
-
 
 @when(u'the employee clicks the cancel button')
 def click_cancel_button(context):
@@ -161,6 +130,12 @@ def expense_shown_with_updates(context, amount, desc, date):
     refresh_button_locator = (By.ID, "refresh-expenses")
     refresh_button = context.dashboard_page.wait_for_clickable(refresh_button_locator)
     refresh_button.click()
+    # wait for all new elements to exist first
+    context.dashboard_page.wait_for_element((By.XPATH, f"//td[contains(text(), '${amount}')]"))
+    context.dashboard_page.wait_for_element((By.XPATH, f"//td[contains(text(), '{desc}')]"))
+    context.dashboard_page.wait_for_element((By.XPATH, f"//td[contains(text(), '{date}')]"))
+    context.dashboard_page.wait_for_element((By.XPATH, f"//td[contains(text(), 'PENDING')]"))
+    time.sleep(1)
     # get the row with specified fields
     rows = context.driver.find_elements(By.TAG_NAME, "tr")
     found = False
