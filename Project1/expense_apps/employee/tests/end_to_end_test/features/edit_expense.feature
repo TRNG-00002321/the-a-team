@@ -30,7 +30,7 @@ Scenario: Edit Expense, cancel edit
   Given the employee is on my expenses
   And an expense with the description: "Client lunch" is shown
   And the expense with description "Client lunch" is pending
-  When the employee clicks the edit button for the expense with description "Client"
+  When the employee clicks the edit button for the expense with description "Client lunch"
   And the employee is redirected to the edit menu
   And the employee inputs into the amount field: "999999"
   And the employee inputs into the description field: "wont be updated"

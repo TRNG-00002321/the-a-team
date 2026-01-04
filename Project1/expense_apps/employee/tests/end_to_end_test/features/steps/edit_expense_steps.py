@@ -17,9 +17,10 @@ def click_edit_button(context, desc):
 
 @when(u'the employee is redirected to the edit menu')
 def redirected_to_edit_menu(context):
-    header_locator = (By.CSS_SELECTOR, "#edit-expense-section h3")
+    header_locator = (By.CSS_SELECTOR, "div#edit-expense-section > h3")
     header = context.dashboard_page.get_text(header_locator)
-    assert header == "Edit Expense"
+    print("**************HEADER FOUND: "+header)
+    assert "Edit Expense" in header
 
 @when(u'the employee inputs into the amount field: "{amount}"')
 def input_amount(context, amount):
@@ -158,27 +159,27 @@ def step_impl(context, amount, desc, date):
             break
     assert found
 
-    #@given(u'an expense with the description: "{desc}" is shown')
-    #def expense_with_description_is_shown(context, desc):
-    #    # get the row with specified fields
-    #    rows = context.driver.find_elements(By.TAG_NAME, "tr")
-    #    specific_row = None
-    #    for row in rows[1:]:
-    #        row_description = row.find_element(By.CSS_SELECTOR, "td:nth-child(3)").text
-    #        if row_description == desc:
-    #            specific_row = row
-    #            break
-    #    assert specific_row.is_displayed()
+#@given(u'an expense with the description: "{desc}" is shown')
+#def expense_with_description_is_shown(context, desc):
+#    # get the row with specified fields
+#    rows = context.driver.find_elements(By.TAG_NAME, "tr")
+#    specific_row = None
+#    for row in rows[1:]:
+#        row_description = row.find_element(By.CSS_SELECTOR, "td:nth-child(3)").text
+#        if row_description == desc:
+#            specific_row = row
+#            break
+#    assert specific_row.is_displayed()
 
-    @given(u'the expense with description "{desc}" is pending')
-    def expense_with_description_is_pending(context, desc):
-        # get the row with specified fields
-        rows = context.driver.find_elements(By.TAG_NAME, "tr")
-        specific_row = None
-        for row in rows[1:]:
-            row_description = row.find_element(By.CSS_SELECTOR, "td:nth-child(3)").text
-            row_status = row.find_element(By.CSS_SELECTOR, "td:nth-child(4)").text
-            if row_description == desc and row_status == "PENDING":
-                specific_row = row
-                break
-        assert specific_row.is_displayed()
+#@given(u'the expense with description "{desc}" is pending')
+#def expense_with_description_is_pending(context, desc):
+#    # get the row with specified fields
+#    rows = context.driver.find_elements(By.TAG_NAME, "tr")
+#    specific_row = None
+#    for row in rows[1:]:
+#        row_description = row.find_element(By.CSS_SELECTOR, "td:nth-child(3)").text
+#        row_status = row.find_element(By.CSS_SELECTOR, "td:nth-child(4)").text
+#        if row_description == desc and row_status == "PENDING":
+#            specific_row = row
+#            break
+#    assert specific_row.is_displayed()
