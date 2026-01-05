@@ -50,15 +50,16 @@ public class DashboardPage extends BasePage {
         allExpensesButton.click();
     }
 
-    public void goToGenerateReportsScreen() {
-        wait.until(ExpectedConditions.visibilityOf(generateReportsButton));
-        generateReportsButton.click();
-    }
 
     public LoginPage logout() {
         wait.until(ExpectedConditions.visibilityOf(logoutButton));
         logoutButton.click();
         return new LoginPage(this.driver);
+    }
+
+    public void goToGenerateReportsScreen() {
+        wait.until(ExpectedConditions.visibilityOf(generateReportsButton));
+        generateReportsButton.click();
     }
 
     // REPORT GENERATION
@@ -83,6 +84,7 @@ public class DashboardPage extends BasePage {
     public String getMessageText() {
         return getText(reportMessage);
     }
+
 }
 
 

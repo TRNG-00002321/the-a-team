@@ -21,7 +21,7 @@ Scenario: Pending Expenses Report
 Scenario Outline: Report generation without inputting values
   Given the manager is on the generate reports screen
   And report all input fields are empty
-  When the manager clicks the "<button>" button
+  When the manager clicks the "<button>" report button
   Then a message containing: "<message>" is shown
 
   Examples:
@@ -33,18 +33,18 @@ Scenario Outline: Report generation without inputting values
 Scenario: Successful employee report
   Given the manager is on the generate reports screen
   When the manager inputs "1" into the report employee id field
-  When the manager clicks the "Generate Employee Report" button
+  When the manager clicks the "Generate Employee Report" report button
   Then a report is downloaded, and a "Report generated successfully!" message is shown
 
 Scenario: Category Report
   Given the manager is on the generate reports screen
   When the manager inputs "Travel" into the report category field
-  When the manager clicks the "Generate Category Report" button
+  When the manager clicks the "Generate Category Report" report button
   Then a report is downloaded, and a "Report generated successfully!" message is shown
 
 Scenario: Date Range Report
   Given the manager is on the generate reports screen
   When the manager inputs "2025-01-01" into the start date field
   And the manager inputs "2025-12-31" into the end date field
-  And the manager clicks the "Generate Date Range Report" button
+  And the manager clicks the "Generate Date Range Report" report button
   Then a report is downloaded, and a "Report generated successfully!" message is shown
