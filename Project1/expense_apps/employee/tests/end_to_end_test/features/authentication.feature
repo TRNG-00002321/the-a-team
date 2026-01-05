@@ -12,22 +12,22 @@ Scenario: Successful Login
   When the employee enters username "employee1"
   And the employee enters password "password123"
   And the employee clicks the login button
-  Then the employee sees the message: "Login successful! Redirecting to employee dashboard..."
+  Then the employee sees the auth message: "Login successful! Redirecting to employee dashboard..."
   And the employee is redirected to the employee dashboard
 
 Scenario Outline: Invalid Login
   Given the employee is on the login screen
-  When the employee enters username <username>
-  And the employee enters password <password>
+  When the employee enters username "<username>"
+  And the employee enters password "<password>"
   And the employee clicks the login button
   Then the employee is not redirected to the dashboard
-  And the employee sees the message: <message>
+  And the employee sees the auth message: "<message>"
 
 Examples:
     | username    | password             | message              |
-    | wronguser   | password123          | Invalid Credentials  |
-    | employee1   | wrongpassword        | Invalid Credentials  |
-    | wronguser   | wrongpassword        | Invalid Credentials  |
+    | wronguser   | password123          | Invalid credentials  |
+    | employee1   | wrongpassword        | Invalid credentials  |
+    | wronguser   | wrongpassword        | Invalid credentials  |
     | manager1    | password123          | Login failed         |
 
 Scenario: Empty Username Input

@@ -10,13 +10,13 @@ Background:
 
 Scenario: Successful Delete Expense
   Given the employee is on my expenses
-  And an expense with the description: "Hotel Stay" is shown
-  And the expense with description "Hotel Stay" is pending
-  When the employee clicks the delete button for the expense with description "Hotel Stay"
+  And an expense with the description: "Client lunch" is shown
+  And the expense with description "Client lunch" is pending
+  When the employee clicks the delete button for the expense with description "Client lunch"
   And the employee clicks ok for the confirmation alert
   And the employee is shown another alert with message: "Expense deleted successfully!"
   And the employee clicks ok to close the alert
-  Then the expense with description: "Hotel Stay" is no longer shown
+  Then the expense with description: "Client lunch" is no longer shown
 
 Scenario: Cancel Delete Expense
   Given the employee is on my expenses
