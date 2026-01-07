@@ -3,6 +3,9 @@ from behave import given, when, then
 from selenium.webdriver.common.by import By
 import time
 
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
 @when(u'the employee clicks the edit button for the expense with description "{desc}"')
 def click_edit_button(context, desc):
     #get the row with specified fields
@@ -131,11 +134,15 @@ def expense_shown_with_updates(context, amount, desc, date):
     refresh_button = context.dashboard_page.wait_for_clickable(refresh_button_locator)
     refresh_button.click()
     # wait for all new elements to exist first
+    table_locator = (By.TAG_NAME, "table")
+    old_table = context.dashboard_page.wait_for_element(table_locator)
+    wait = WebDriverWait(context.driver, 10)
+    wait.until(EC.staleness_of(old_table))
     context.dashboard_page.wait_for_element((By.XPATH, f"//td[contains(text(), '${amount}')]"))
     context.dashboard_page.wait_for_element((By.XPATH, f"//td[contains(text(), '{desc}')]"))
     context.dashboard_page.wait_for_element((By.XPATH, f"//td[contains(text(), '{date}')]"))
     context.dashboard_page.wait_for_element((By.XPATH, f"//td[contains(text(), 'PENDING')]"))
-    time.sleep(1)
+    #time.sleep(1)
     # get the row with specified fields
     rows = context.driver.find_elements(By.TAG_NAME, "tr")
     found = False
