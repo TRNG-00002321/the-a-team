@@ -19,7 +19,7 @@ class DatabaseConnection:
         elif test_mode:
             self.db_path = os.getenv("TEST_DATABASE_PATH")
         else:
-            self.db_path = os.getenv('DATABASE_PATH', '../expense_manager.db')
+            self.db_path = os.getenv('DATABASE_PATH', '/expense_manager.db')
 
         if not self.db_path:
             raise ValueError("Database path is not configured")
