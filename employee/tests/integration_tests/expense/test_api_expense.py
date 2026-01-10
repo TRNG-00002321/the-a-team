@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from src.main import create_app
+from main import create_app
 from src.repository import DatabaseConnection
 
 TEST_DB_PATH = os.path.abspath(os.path.join(

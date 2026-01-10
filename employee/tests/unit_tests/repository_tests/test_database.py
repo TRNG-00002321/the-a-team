@@ -1,6 +1,8 @@
 import sqlite3
 from unittest.mock import patch, MagicMock
 
+import pytest
+
 from src.repository import DatabaseConnection
 
 @patch("src.repository.database.sqlite3.connect")
