@@ -5,9 +5,10 @@ import com.revature.repository.User;
 import com.revature.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -20,10 +21,6 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-
-// Testing repository layer with mocked database connection
-// Mocking JDBC PreparedStatement and ResultSet
-// Testing SQL Query execution in isolation
 
 @ExtendWith(MockitoExtension.class)
 public class TestUserRepository {
@@ -39,6 +36,7 @@ public class TestUserRepository {
 
     @Mock
     private ResultSet mockResultSet;
+
     private UserRepository userRepository;
 
     @BeforeEach
@@ -46,123 +44,77 @@ public class TestUserRepository {
         userRepository = new UserRepository(mockDatabaseConnection);
     }
 
-    @Nested
-    @DisplayName("Find By ID Tests")
-    class FindByIdTests {
-        // MU 184
-        @Test
-        @DisplayName("Id Found")
-        void testFindById_Found() throws SQLException {
-            // Arrange
-            when(mockDatabaseConnection.getConnection()).thenReturn(mockConnection);
-            when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
-            when(mockStatement.executeQuery()).thenReturn(mockResultSet);
-            when(mockResultSet.next()).thenReturn(true);
-            when(mockResultSet.getInt("id")).thenReturn(1);
-            when(mockResultSet.getString("username")).thenReturn("manager1");
-            when(mockResultSet.getString("password")).thenReturn("password1");
-            when(mockResultSet.getString("role")).thenReturn("Manager");
+    // MU-184, MU-187
+    @ParameterizedTest
+    @CsvSource({
+            "id, 1, '', manager1, Manager",
+            "username, 0, manager1, manager1, Manager"
+    })
+    @DisplayName("Test Find Methods - User Found")
+    void testFindMethods_Found(String findBy, int id, String username, String expectedUsername, String expectedRole) throws SQLException {
+        when(mockDatabaseConnection.getConnection()).thenReturn(mockConnection);
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
+        when(mockStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockResultSet.next()).thenReturn(true);
+        when(mockResultSet.getInt("id")).thenReturn(1);
+        when(mockResultSet.getString("username")).thenReturn("manager1");
+        when(mockResultSet.getString("password")).thenReturn("password123");
+        when(mockResultSet.getString("role")).thenReturn("Manager");
 
-            // Act
-            Optional<User> result = userRepository.findById(1);
+        Optional<User> result = findBy.equals("id")
+                ? userRepository.findById(id)
+                : userRepository.findByUsername(username);
 
-            // Assert
-            assertTrue(result.isPresent());
-            assertEquals(1, result.get().getId());
-            assertEquals("manager1", result.get().getUsername());
-            assertEquals("Manager", result.get().getRole());
-            verify(mockStatement).setInt(1, 1);
-        }
+        assertTrue(result.isPresent());
+        assertEquals(expectedUsername, result.get().getUsername());
+        assertEquals(expectedRole, result.get().getRole());
 
-        // MU 185
-        @Test
-        @DisplayName("Id Not Found")
-        void testFindById_NotFound() throws SQLException{
-            when(mockDatabaseConnection.getConnection()).thenReturn(mockConnection);
-            when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
-            when(mockStatement.executeQuery()).thenReturn(mockResultSet);
-            when(mockResultSet.next()).thenReturn(false);
-
-            Optional<User> result = userRepository.findById(999);
-
-            assertTrue(result.isEmpty());
-
-        }
-
-        // MU 186
-        @Test
-        @DisplayName("Test findById Throws SQL Exception")
-        void testFindById_ThrowsException() throws SQLException {
-            //Arrange
-            when(mockDatabaseConnection.getConnection()).thenReturn(mockConnection);
-            when(mockConnection.prepareStatement(anyString())).thenThrow(new SQLException("Database error"));
-            //Act
-            RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-                userRepository.findById(999);
-            });
-            //Assert
-            assertTrue(exception.getMessage().contains("Error finding user by ID"));
-        }
-
-    }
-    @Nested
-    @DisplayName("Find by Username Tests")
-    class FindByUserNameTests{
-        @Test
-        // MU 187
-        void TestFindByUsername_Positive() throws SQLException {
-            //Arrange
-            when(mockDatabaseConnection.getConnection()).thenReturn(mockConnection);
-            when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
-            when(mockStatement.executeQuery()).thenReturn(mockResultSet);
-            when(mockResultSet.next()).thenReturn(true);
-            when(mockResultSet.getInt("id")).thenReturn(1);
-            when(mockResultSet.getString("username")).thenReturn("manager1");
-            when(mockResultSet.getString("password")).thenReturn("password123");
-            when(mockResultSet.getString("role")).thenReturn("Manager");
-            //Act
-            Optional<User> result = userRepository.findByUsername("manager1");
-            //Assert
-            assertTrue(result.isPresent());
-            assertEquals(1, result.get().getId());
-            assertEquals("manager1", result.get().getUsername());
-            assertEquals("Manager", result.get().getRole());
-            verify(mockStatement).setString(1, "manager1");
-        }
-
-        @Test
-        // MU 188
-        void TestFindByUsername_ThrowsException() throws SQLException {
-            //Arrange
-            when(mockDatabaseConnection.getConnection()).thenReturn(mockConnection);
-            when(mockConnection.prepareStatement(anyString())).thenThrow(new SQLException("Database error"));
-            //Act
-            RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-                userRepository.findByUsername("manager1");
-            });
-            //Assert
-            assertTrue(exception.getMessage().contains("Error finding user by username"));
-
-        }
-
-        @Test
-        // MU 189
-        @DisplayName("Username Not Found")
-        void testFindByUsername_NotFound() throws SQLException{
-            when(mockDatabaseConnection.getConnection()).thenReturn(mockConnection);
-            when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
-            when(mockStatement.executeQuery()).thenReturn(mockResultSet);
-            when(mockResultSet.next()).thenReturn(false);
-
-            Optional<User> result = userRepository.findByUsername("unknown user");
-
-            assertTrue(result.isEmpty());
-
+        if (findBy.equals("id")) {
+            verify(mockStatement).setInt(1, id);
+        } else {
+            verify(mockStatement).setString(1, username);
         }
     }
 
+    // MU-185, MU-189
+    @ParameterizedTest
+    @CsvSource({
+            "id, 999, ''",
+            "username, 0, 'unknown user'"
+    })
+    @DisplayName("Test Find Methods - Not Found")
+    void testFindMethods_NotFound(String findBy, int id, String username) throws SQLException {
+        when(mockDatabaseConnection.getConnection()).thenReturn(mockConnection);
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
+        when(mockStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockResultSet.next()).thenReturn(false);
+
+        Optional<User> result = findBy.equals("id")
+                ? userRepository.findById(id)
+                : userRepository.findByUsername(username);
+
+        assertTrue(result.isEmpty());
+    }
+
+    // MU-186, MU-188
+    @ParameterizedTest
+    @CsvSource({
+            "id, 999, '', 'Error finding user by ID'",
+            "username, 0, manager1, 'Error finding user by username'"
+    })
+    @DisplayName("Test Find Methods - Throws Exception")
+    void testFindMethods_ThrowsException(String findBy, int id, String username, String expectedMessage) throws SQLException {
+        when(mockDatabaseConnection.getConnection()).thenReturn(mockConnection);
+        when(mockConnection.prepareStatement(anyString())).thenThrow(new SQLException("Database error"));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            if (findBy.equals("id")) {
+                userRepository.findById(id);
+            } else {
+                userRepository.findByUsername(username);
+            }
+        });
+
+        assertTrue(exception.getMessage().contains(expectedMessage));
+    }
 }
-
-
-
-
