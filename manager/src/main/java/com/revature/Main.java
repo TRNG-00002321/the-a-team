@@ -55,10 +55,10 @@ public class Main {
             // Enable static file serving from resources
             config.staticFiles.add(staticFiles -> {
                 staticFiles.hostedPath = "/";
-                staticFiles.directory = "/";
+                staticFiles.directory = "/public";
                 staticFiles.location = Location.CLASSPATH;
             });
-            
+
             // Enable request logging
             config.bundledPlugins.enableDevLogging();
         });
@@ -74,7 +74,7 @@ public class Main {
         });
         
         // Root redirect to manager dashboard
-        app.get("/", ctx -> ctx.redirect("/manager.html"));
+        app.get("/", ctx -> ctx.redirect("/public/manager.html"));
         
         // Authentication status endpoint (no auth required)
         app.get("/api/auth/status", ctx -> {
