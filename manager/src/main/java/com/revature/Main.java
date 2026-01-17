@@ -46,8 +46,8 @@ public class Main {
             // Enable CORS for cross-origin requests from frontend
             config.bundledPlugins.enableCors(cors -> {
                 cors.addRule(it -> {
-                    it.allowHost("http://127.0.0.1:5000");
-                    it.allowHost("http://localhost:5000");
+                    it.allowHost("http://127.0.0.1:5001");
+                    it.allowHost("http://localhost:5001");
                     it.allowCredentials = true;
                 });
             });
