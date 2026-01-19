@@ -1,5 +1,4 @@
 import os
-from dotenv import load_dotenv
 from src.repository import DatabaseConnection
 from tests.end_to_end_test.drivers.browser_manager import create_driver
 

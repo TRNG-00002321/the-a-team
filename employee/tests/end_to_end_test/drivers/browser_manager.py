@@ -15,6 +15,35 @@ from webdriver_manager.microsoft import EdgeChromiumDriverManager
 def create_driver(browser_name: str, headless: bool = False):
     browser = browser_name.lower()
     remote_url = os.getenv("SELENIUM_REMOTE_URL")
+    is_ci = os.getenv("CI", "false").lower() == "true"
+
+    # ----------------------------
+    # CI → Remote ONLY
+    # ----------------------------
+    if is_ci:
+        if not remote_url:
+            raise RuntimeError(
+                "CI=true but SELENIUM_REMOTE_URL is not set. "
+                "Refusing to start local WebDriver."
+            )
+
+        options = webdriver.ChromeOptions()
+        if headless:
+            options.add_argument("--headless=new")
+
+        options.add_experimental_option(
+            "prefs",
+            {
+                "profile.password_manager_leak_detection": False,
+                "credentials_enable_service": False,
+                "profile.password_manager_enabled": False,
+            }
+        )
+
+        return webdriver.Remote(
+            command_executor=remote_url,
+            options=options
+        )
 
     if browser == "chrome":
         options = webdriver.ChromeOptions()
