@@ -11,7 +11,6 @@ SEED_SQL_PATH = os.path.abspath(
 
 def before_all(context):
     # Read DB path from environment
-    load_dotenv()
     db_path = os.getenv("TEST_DATABASE_PATH")
     if not db_path:
         raise RuntimeError(
