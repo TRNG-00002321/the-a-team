@@ -205,6 +205,14 @@
                             ${project.build.directory}/allure-results
                         </allure.results.directory>
                     </systemPropertyVariables>
+
+                    <!-- Include JUnit Platform (JUnit 5) tests -->
+                    <includes>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                        <include>**/Test*.java</include>
+                        <include>**/*Runner.java</include>
+                    </includes>
                 </configuration>
             </plugin>
             <!-- Generate Allure Reports plugin -->
