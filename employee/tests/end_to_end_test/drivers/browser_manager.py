@@ -35,9 +35,9 @@ def create_driver(browser_name: str, headless: bool = False):
                 command_executor=remote_url,
                 options=options
             )
-
-        service = ChromeService(ChromeDriverManager().install())
-        return webdriver.Chrome(service=service, options=options)
+        else:
+            service = ChromeService(ChromeDriverManager().install())
+            return webdriver.Chrome(service=service, options=options)
 
     elif browser == "firefox":
         options = webdriver.FirefoxOptions()
@@ -49,9 +49,9 @@ def create_driver(browser_name: str, headless: bool = False):
                 command_executor=remote_url,
                 options=options
             )
-
-        service = FirefoxService(GeckoDriverManager().install())
-        return webdriver.Firefox(service=service, options=options)
+        else:
+            service = FirefoxService(GeckoDriverManager().install())
+            return webdriver.Firefox(service=service, options=options)
 
     elif browser == "edge":
         options = webdriver.EdgeOptions()
@@ -63,9 +63,9 @@ def create_driver(browser_name: str, headless: bool = False):
                 command_executor=remote_url,
                 options=options
             )
-
-        service = EdgeService(EdgeChromiumDriverManager().install())
-        return webdriver.Edge(service=service, options=options)
+        else:
+            service = EdgeService(EdgeChromiumDriverManager().install())
+            return webdriver.Edge(service=service, options=options)
 
     else:
         raise ValueError(f"Unsupported browser: {browser_name}")
