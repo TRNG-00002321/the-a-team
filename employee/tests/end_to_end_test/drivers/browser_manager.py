@@ -1,4 +1,5 @@
 import os
+import sys
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.firefox.service import Service as FirefoxService
@@ -8,16 +9,22 @@ from webdriver_manager.firefox import GeckoDriverManager
 def create_driver(browser: str, headless: bool):
     selenium_remote_url = os.getenv("SELENIUM_REMOTE_URL")
     
-    # Add debug output
-    print(f"DEBUG: SELENIUM_REMOTE_URL = '{selenium_remote_url}'")
-    print(f"DEBUG: Browser = {browser}")
-    print(f"DEBUG: Headless = {headless}")
+    # Force output to stderr (not buffered)
+    sys.stderr.write(f"\n{'='*60}\n")
+    sys.stderr.write(f"DEBUG create_driver() called\n")
+    sys.stderr.write(f"SELENIUM_REMOTE_URL = '{selenium_remote_url}'\n")
+    sys.stderr.write(f"Type: {type(selenium_remote_url)}\n")
+    sys.stderr.write(f"Is None? {selenium_remote_url is None}\n")
+    sys.stderr.write(f"Bool value? {bool(selenium_remote_url)}\n")
+    sys.stderr.write(f"Browser = {browser}\n")
+    sys.stderr.write(f"Headless = {headless}\n")
+    sys.stderr.write(f"{'='*60}\n\n")
+    sys.stderr.flush()
     
-    # -----------------------------
-    # REMOTE DRIVER (CI / Docker)
-    # -----------------------------
-    if selenium_remote_url:  # This check should work if the env var is set
-        print(f"DEBUG: Using REMOTE driver at {selenium_remote_url}")
+    # Explicit check with whitespace stripping
+    if selenium_remote_url is not None and selenium_remote_url.strip():
+        sys.stderr.write(f">>> USING REMOTE SELENIUM GRID at {selenium_remote_url}\n")
+        sys.stderr.flush()
         
         if browser == "firefox":
             options = webdriver.FirefoxOptions()
@@ -47,10 +54,9 @@ def create_driver(browser: str, headless: bool):
             options=options
         )
     
-    # -----------------------------
-    # LOCAL DRIVER (DEV MACHINE)
-    # -----------------------------
-    print("DEBUG: Using LOCAL driver")
+    # LOCAL DRIVER
+    sys.stderr.write(">>> USING LOCAL CHROMEDRIVER (webdriver-manager)\n")
+    sys.stderr.flush()
     
     if browser == "firefox":
         options = webdriver.FirefoxOptions()
