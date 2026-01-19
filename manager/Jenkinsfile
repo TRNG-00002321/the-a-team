@@ -5,7 +5,7 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME = 'expense-manager'
+        APP_NAME = 'manager-app'
         APP_PORT = '5001'
         BUILD_VERSION = "${BUILD_NUMBER}"
         WORKSPACE_HOST = "${env.JENKINS_HOME_HOST ?: env.WORKSPACE}"
