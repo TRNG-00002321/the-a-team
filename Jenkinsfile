@@ -26,7 +26,10 @@ pipeline {
             steps {
                 sh 'docker-compose down --remove-orphans || true'
                 sh 'docker-compose up -d --force-recreate employee'
-                sh 'behave employee/tests/end_to_end_test/features'
+                sh '''
+                docker exec expense-manager-pipeline_employee_1 \
+                behave tests/end_to_end_test/features
+                '''
                 sh 'docker-compose down --remove-orphans'
             }
         }
