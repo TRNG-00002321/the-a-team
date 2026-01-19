@@ -25,7 +25,7 @@ pipeline {
         stage('E2E Tests') {
             steps {
                 sh 'docker-compose down --remove-orphans || true'
-                sh 'docker-compose up -d --force-recreate employee'
+                sh 'docker-compose up -d --force-recreate selenium employee'
                 sh '''
                 docker exec expense-manager-pipeline_employee_1 \
                 behave tests/end_to_end_test/features
