@@ -26,10 +26,7 @@ pipeline {
             steps {
                 sh 'docker-compose down --remove-orphans || true'
                 sh 'docker-compose up -d --force-recreate selenium employee'
-                sh '''
-                docker exec expense-manager-pipeline_employee_1 \
-                behave tests/end_to_end_test/features
-                '''
+                sh 'docker-compose exec -T employee behave tests/end_to_end_test/features'
                 sh 'docker-compose down --remove-orphans'
             }
         }
