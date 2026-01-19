@@ -9,6 +9,8 @@ services:
     build: ./employee
     ports:
       - "5000:5000"
+    depends_on:
+      - selenium
     environment:
       TEST_MODE: "true"
       BROWSER: chrome
