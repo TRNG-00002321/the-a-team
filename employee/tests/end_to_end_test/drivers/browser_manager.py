@@ -2,6 +2,7 @@
 cross_browser_automated.py
 Automated driver setup for all major browsers
 """
+import os
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.firefox.service import Service as FirefoxService
@@ -13,6 +14,7 @@ from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 def create_driver(browser_name: str, headless: bool = False):
     browser = browser_name.lower()
+    remote_url = os.getenv("SELENIUM_REMOTE_URL")
 
     if browser == "chrome":
         options = webdriver.ChromeOptions()
@@ -28,6 +30,12 @@ def create_driver(browser_name: str, headless: bool = False):
             }
         )
 
+        if remote_url:
+            return webdriver.Remote(
+                command_executor=remote_url,
+                options=options
+            )
+
         service = ChromeService(ChromeDriverManager().install())
         return webdriver.Chrome(service=service, options=options)
 
@@ -36,6 +44,12 @@ def create_driver(browser_name: str, headless: bool = False):
         if headless:
             options.add_argument("-headless")
 
+        if remote_url:
+            return webdriver.Remote(
+                command_executor=remote_url,
+                options=options
+            )
+
         service = FirefoxService(GeckoDriverManager().install())
         return webdriver.Firefox(service=service, options=options)
 
@@ -43,6 +57,12 @@ def create_driver(browser_name: str, headless: bool = False):
         options = webdriver.EdgeOptions()
         if headless:
             options.add_argument("--headless=new")
+
+        if remote_url:
+            return webdriver.Remote(
+                command_executor=remote_url,
+                options=options
+            )
 
         service = EdgeService(EdgeChromiumDriverManager().install())
         return webdriver.Edge(service=service, options=options)
