@@ -1,7 +1,3 @@
-"""
-cross_browser_automated.py
-Automated driver setup for all major browsers
-"""
 import os
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
