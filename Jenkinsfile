@@ -24,9 +24,10 @@ pipeline {
 
         stage('E2E Tests') {
             steps {
-                sh 'docker-compose up -d employee'
+                sh 'docker-compose down --remove-orphans || true'
+                sh 'docker-compose up -d --force-recreate employee'
                 sh 'behave employee/tests/end_to_end_test/features'
-                sh 'docker-compose down'
+                sh 'docker-compose down --remove-orphans'
             }
         }
 
