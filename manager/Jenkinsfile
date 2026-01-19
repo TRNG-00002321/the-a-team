@@ -47,6 +47,25 @@ pipeline {
             }
         }
 
+        stage('Debug Paths') {
+            steps {
+                echo '🔍 Debugging volume mount paths...'
+                dir('manager') {
+                    sh '''
+                        echo "Current directory: $(pwd)"
+                        echo "Listing current directory:"
+                        ls -la
+                        echo ""
+                        echo "Checking if pom.xml exists:"
+                        ls -la pom.xml
+                        echo ""
+                        echo "Testing Docker mount:"
+                        docker run --rm -v $(pwd):/test alpine ls -la /test
+                    '''
+                }
+            }
+        }
+
         stage('Unit Tests') {
             steps {
                 echo '🧪 Running Unit Tests...'
