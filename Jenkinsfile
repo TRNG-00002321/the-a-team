@@ -24,15 +24,15 @@ pipeline {
 
         stage('E2E Tests') {
             steps {
-                sh 'docker compose up -d employee'
+                sh 'docker-compose up -d employee'
                 sh 'behave employee/tests/end_to_end_test/features'
-                sh 'docker compose down'
+                sh 'docker-compose down'
             }
         }
 
         stage('Deploy') {
             steps {
-                sh 'docker compose up -d employee'
+                sh 'docker-compose up -d employee'
             }
         }
     }
