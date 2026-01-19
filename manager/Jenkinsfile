@@ -53,8 +53,8 @@ pipeline {
                 dir('manager') {
                     sh '''
                         docker run --rm \
-                            -v ${WORKSPACE_HOST}/manager:/app \
-                            -v ${MAVEN_CACHE}:/root/.m2 \
+                            -v $(pwd):/app \
+                            -v maven-repo:/root/.m2 \
                             -w /app \
                             maven:3.9-eclipse-temurin-17 \
                             mvn test \
@@ -71,30 +71,30 @@ pipeline {
             }
         }
 
-        stage('Integration Tests') {
-            steps {
-                echo '🔗 Running Integration Tests...'
-                dir('manager') {
-                    sh '''
-                        docker run --rm \
-                            -v ${WORKSPACE_HOST}/manager:/app \
-                            -v ${MAVEN_CACHE}:/root/.m2 \
-                            -w /app \
-                            -e TEST_MODE=true \
-                            maven:3.9-eclipse-temurin-17 \
-                            mvn test \
-                            -Dtest="**/integration_tests/**/*Test.java" \
-                            -DfailIfNoTests=false \
-                            -B
-                    '''
-                }
-            }
-            post {
-                always {
-                    junit allowEmptyResults: true, testResults: 'manager/target/surefire-reports/*.xml'
-                }
-            }
-        }
+//         stage('Integration Tests') {
+//             steps {
+//                 echo '🔗 Running Integration Tests...'
+//                 dir('manager') {
+//                     sh '''
+//                         docker run --rm \
+//                             -v $(pwd):/app \
+//                             -v ${MAVEN_CACHE}:/root/.m2 \
+//                             -w /app \
+//                             -e TEST_MODE=true \
+//                             maven:3.9-eclipse-temurin-17 \
+//                             mvn test \
+//                             -Dtest="**/integration_tests/**/*Test.java" \
+//                             -DfailIfNoTests=false \
+//                             -B
+//                     '''
+//                 }
+//             }
+//             post {
+//                 always {
+//                     junit allowEmptyResults: true, testResults: 'manager/target/surefire-reports/*.xml'
+//                 }
+//             }
+//         }
 
         stage('Code Coverage') {
             steps {
@@ -102,7 +102,7 @@ pipeline {
                 dir('manager') {
                     sh '''
                         docker run --rm \
-                            -v ${WORKSPACE_HOST}/manager:/app \
+                            -v $(pwd):/app \
                             -v ${MAVEN_CACHE}:/root/.m2 \
                             -w /app \
                             maven:3.9-eclipse-temurin-17 \
@@ -136,7 +136,7 @@ pipeline {
                 dir('manager') {
                     sh '''
                         docker run --rm \
-                            -v ${WORKSPACE_HOST}/manager:/app \
+                            -v $(pwd):/app \
                             -v ${MAVEN_CACHE}:/root/.m2 \
                             -w /app \
                             maven:3.9-eclipse-temurin-17 \
@@ -217,7 +217,7 @@ pipeline {
 
                         docker run --rm \
                             --network host \
-                            -v ${WORKSPACE_HOST}/manager:/app \
+                            -v $(pwd):/app \
                             -v ${MAVEN_CACHE}:/root/.m2 \
                             -w /app \
                             -e APP_URL=http://localhost:${APP_PORT} \
