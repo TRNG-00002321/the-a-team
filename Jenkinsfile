@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Build Images') {
             steps {
-                sh 'docker build -t employee-app ./employee'
+                sh 'docker build --no-cache -t employee-app ./employee'
 //                sh 'docker build -t manager-app ./manager'
             }
         }
