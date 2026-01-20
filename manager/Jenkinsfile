@@ -115,12 +115,7 @@ pipeline {
                 echo '📈 Generating JaCoCo Coverage Report...'
                 dir('manager') {
                     sh '''
-                        docker run --rm \
-                            -v $(pwd):/app \
-                            -v ${MAVEN_CACHE}:/root/.m2 \
-                            -w /app \
-                            maven:3.9-eclipse-temurin-17 \
-                            mvn jacoco:report -B
+                        ./mvnw jacoco:report -B
                     '''
                 }
             }
@@ -149,12 +144,7 @@ pipeline {
                 echo '📦 Building JAR file...'
                 dir('manager') {
                     sh '''
-                        docker run --rm \
-                            -v $(pwd):/app \
-                            -v ${MAVEN_CACHE}:/root/.m2 \
-                            -w /app \
-                            maven:3.9-eclipse-temurin-17 \
-                            mvn clean package -DskipTests -B
+                        ./mvnw clean package -DskipTests -B
                     '''
                 }
             }
