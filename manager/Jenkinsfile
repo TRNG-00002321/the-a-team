@@ -1,11 +1,15 @@
+// Manager App (Java/Javalin) - Jenkins CI/CD Pipeline
+// Comprehensive Testing with Allure Reports and Docker Deployment
+
 pipeline {
     agent any
 
     environment {
-        APP_NAME      = 'expense-manager'
-        APP_PORT      = '5001'
+        APP_NAME = 'expense-manager'
+        APP_PORT = '5001'
         BUILD_VERSION = "${BUILD_NUMBER}"
-        MAVEN_CACHE   = 'maven-repo'
+        WORKSPACE_HOST = "${env.JENKINS_HOME_HOST ?: env.WORKSPACE}"
+        MAVEN_CACHE = 'maven-repo'
     }
 
     options {
@@ -15,7 +19,6 @@ pipeline {
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 echo '📥 Checking out source code...'
@@ -32,13 +35,13 @@ pipeline {
 
         stage('Setup') {
             steps {
-                echo '🔧 Setting up environment...'
+                echo '🔧 Setting up build environment...'
                 dir('manager') {
                     sh '''
                         mkdir -p target/allure-results
                         mkdir -p target/surefire-reports
-                        docker volume create ${MAVEN_CACHE} || true
                         docker --version
+                        docker volume create ${MAVEN_CACHE} || true
                     '''
                 }
             }
@@ -46,70 +49,58 @@ pipeline {
 
         stage('Unit Tests') {
             steps {
-                echo '🧪 Running unit tests...'
+                echo '🧪 Running Unit Tests...'
                 dir('manager') {
                     sh '''
-                        docker run --rm \
-                          -v $(pwd):/app \
-                          -v ${MAVEN_CACHE}:/root/.m2 \
-                          -w /app \
-                          maven:3.9-eclipse-temurin-17 \
-                          mvn test \
-                            -Dtest="**/unit_tests/**/*Test.java" \
-                            -DfailIfNoTests=false \
-                            -B
+                    ./mvnw test \
+                    -Dtest="**/unit_tests/**/Test*.java" \
+                    -DfailIfNoTests=false \
+                    -B
                     '''
                 }
             }
             post {
                 always {
-                    junit allowEmptyResults: true,
-                          testResults: 'manager/target/surefire-reports/*.xml'
+                    junit allowEmptyResults: true, testResults: 'manager/target/surefire-reports/*.xml'
                 }
             }
         }
 
         stage('Code Coverage') {
             steps {
-                echo '📈 Generating JaCoCo report...'
+                echo '📈 Generating JaCoCo Coverage Report...'
                 dir('manager') {
                     sh '''
-                        docker run --rm \
-                          -v $(pwd):/app \
-                          -v ${MAVEN_CACHE}:/root/.m2 \
-                          -w /app \
-                          maven:3.9-eclipse-temurin-17 \
-                          mvn jacoco:report -B
+                        ./mvnw jacoco:report -B
                     '''
                 }
             }
             post {
                 always {
-                    jacoco(
-                        execPattern: 'manager/target/jacoco.exec',
-                        classPattern: 'manager/target/classes',
-                        sourcePattern: 'manager/src/main/java',
-                        exclusionPattern: '**/*Test*.class'
+                    recordCoverage(
+                        tools: [[parser: 'JACOCO']],
+                        id: 'jacoco',
+                        name: 'JaCoCo Coverage',
+                        sourceCodeRetention: 'EVERY_BUILD',
+                        qualityGates: [
+                            [threshold: 60.0, metric: 'LINE', baseline: 'PROJECT', unstable: true],
+                            [threshold: 60.0, metric: 'BRANCH', baseline: 'PROJECT', unstable: true]
+                        ]
                     )
                 }
             }
         }
 
-        stage('Build JAR') {
-            steps {
-                echo '📦 Building application JAR...'
-                dir('manager') {
-                    sh '''
-                        docker run --rm \
-                          -v $(pwd):/app \
-                          -v ${MAVEN_CACHE}:/root/.m2 \
-                          -w /app \
-                          maven:3.9-eclipse-temurin-17 \
-                          mvn clean package -DskipTests -B
-                    '''
+        stage('Build Application') {
+                steps {
+                    echo '📦 Building JAR file...'
+                    dir('manager') {
+                        sh '''
+                            ./mvnw clean package -DskipTests -B
+                        '''
+                    }
                 }
             }
-        }
 
         stage('Build Docker Image') {
             steps {
@@ -117,81 +108,149 @@ pipeline {
                 dir('manager') {
                     sh '''
                         docker build \
-                          -t ${APP_NAME}:${BUILD_VERSION} \
-                          -t ${APP_NAME}:latest \
-                          .
+                            -t ${APP_NAME}:${BUILD_VERSION} \
+                            -t ${APP_NAME}:latest \
+                            -f Dockerfile .
+                        echo "✅ Docker image built successfully"
                         docker images | grep ${APP_NAME}
                     '''
                 }
             }
         }
 
-        stage('Start App for E2E Tests') {
+        stage('Start Application for Testing') {
             steps {
-                echo '🚀 Starting application...'
+                echo '🚀 Starting Manager App for Testing...'
                 sh '''
                     docker stop ${APP_NAME}-test 2>/dev/null || true
                     docker rm ${APP_NAME}-test 2>/dev/null || true
                     docker volume create expense-test-data || true
 
                     docker run -d \
-                      --name ${APP_NAME}-test \
-                      -p ${APP_PORT}:${APP_PORT} \
-                      -v expense-test-data:/data \
-                      -e DATABASE_PATH=/app/db/test_expense_manager.db \
-                      ${APP_NAME}:${BUILD_VERSION}
+                        --name ${APP_NAME}-test \
+                        -p ${APP_PORT}:${APP_PORT} \
+                        -v expense-test-data:/data \
+                        -e TEST_MODE=false \
+                        -e DATABASE_PATH=/app/db/test_expense_manager.db \
+                        ${APP_NAME}:${BUILD_VERSION}
 
-                    echo "Waiting for health check..."
-                    for i in {1..60}; do
-                        if curl -f http://localhost:${APP_PORT}/health; then
-                            echo "✅ App is healthy"
+                    echo "Waiting for application to start..."
+                    for i in {1..30}; do
+                        if curl -f http://localhost:${APP_PORT}/health 2>/dev/null; then
+                            echo "✅ Application is ready!"
                             exit 0
                         fi
+                        echo "Attempt $i/30: Waiting for health check..."
                         sleep 2
                     done
 
-                    echo "❌ App failed to start"
+                    echo "❌ Application failed to start"
                     docker logs ${APP_NAME}-test
                     exit 1
                 '''
             }
         }
 
-        stage('E2E Tests (Cucumber + Selenium)') {
+        stage('Integration Tests') {
             steps {
+                echo '🔗 Running Integration Tests...'
+                dir('manager') {
+                    sh '''
+                        docker run --rm \
+                            -v $(pwd):/app \
+                            -v ${MAVEN_CACHE}:/root/.m2 \
+                            -w /app \
+                            -e TEST_MODE=true \
+                            maven:3.9-eclipse-temurin-17 \
+                            mvn test \
+                            -Dtest="**/integration_tests/**/*Test.java" \
+                            -DfailIfNoTests=false \
+                            -B
+                    '''
+                }
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'manager/target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('E2E Tests with Cucumber') {
+            steps {
+                echo '🌐 Running E2E Tests with Cucumber + Selenium...'
                 dir('manager') {
                     sh '''
                         docker run -d \
-                          --name selenium-chrome \
-                          -p 4444:4444 \
-                          --shm-size=2g \
-                          selenium/standalone-chrome:latest
+                            --name selenium-chrome \
+                            --network host \
+                            --shm-size=2g \
+                            selenium/standalone-chrome:latest
 
+                        echo "Waiting for Selenium Grid..."
                         for i in {1..30}; do
-                          curl -f http://localhost:4444/wd/hub/status && break
-                          sleep 2
+                            if curl -f http://localhost:4444/wd/hub/status 2>/dev/null; then
+                                echo "✅ Selenium Grid ready!"
+                                break
+                            fi
+                            sleep 2
                         done
 
                         docker run --rm \
-                          -v $(pwd):/app \
-                          -v ${MAVEN_CACHE}:/root/.m2 \
-                          -w /app \
-                          -e APP_URL=http://host.docker.internal:${APP_PORT} \
-                          -e SELENIUM_REMOTE_URL=http://host.docker.internal:4444/wd/hub \
-                          maven:3.9-eclipse-temurin-17 \
-                          mvn test \
-                            -Dtest="com.revature.end_to_end_tests.runners.TestRunner" \
-                            -DfailIfNoTests=false \
-                            -B || true
+                            --network host \
+                            -v $(pwd):/app \
+                            -v ${MAVEN_CACHE}:/root/.m2 \
+                            -w /app \
+                            -e APP_URL=http://localhost:${APP_PORT} \
+                            -e BROWSER=chrome \
+                            -e SELENIUM_REMOTE_URL=http://localhost:4444/wd/hub \
+                            maven:3.9-eclipse-temurin-17 \
+                            mvn test \
+                                -Dtest="com.revature.end_to_end_tests.runners.TestRunner" \
+                                -DfailIfNoTests=false \
+                                -B || true
+
+                        docker stop selenium-chrome || true
+                        docker rm selenium-chrome || true
                     '''
                 }
             }
             post {
                 always {
                     sh '''
-                        docker stop selenium-chrome || true
-                        docker rm selenium-chrome || true
+                        docker stop selenium-chrome 2>/dev/null || true
+                        docker rm selenium-chrome 2>/dev/null || true
                     '''
+                    junit allowEmptyResults: true, testResults: 'manager/target/surefire-reports/*.xml, manager/target/cucumber-reports/cucumber.xml'
+                    publishHTML(target: [
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'manager/target/cucumber-reports',
+                        reportFiles: 'cucumber.html',
+                        reportName: 'Cucumber E2E Test Report'
+                    ])
+                }
+            }
+        }
+
+        stage('Cleanup Test Container') {
+            steps {
+                sh '''
+                    docker stop ${APP_NAME}-test 2>/dev/null || true
+                    docker rm ${APP_NAME}-test 2>/dev/null || true
+                    docker volume rm expense-test-data 2>/dev/null || true
+                '''
+            }
+        }
+
+        stage('Generate Allure Report') {
+            steps {
+                script {
+                    allure([
+                        includeProperties: false,
+                        results: [[path: 'manager/target/allure-results']]
+                    ])
                 }
             }
         }
@@ -200,16 +259,17 @@ pipeline {
     post {
         always {
             sh '''
-                docker stop ${APP_NAME}-test || true
-                docker rm ${APP_NAME}-test || true
+                docker stop ${APP_NAME}-test 2>/dev/null || true
+                docker rm ${APP_NAME}-test 2>/dev/null || true
+                docker image prune -f || true
             '''
-            archiveArtifacts artifacts: 'manager/target/*.jar', allowEmptyArchive: false
+            archiveArtifacts artifacts: 'manager/target/**/*.jar', allowEmptyArchive: true
         }
         success {
             echo '✅ Pipeline completed successfully!'
         }
         failure {
-            echo '❌ Pipeline failed'
+            echo '❌ Pipeline failed!'
         }
     }
 }
