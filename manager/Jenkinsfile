@@ -67,35 +67,39 @@ pipeline {
         }
 
         stage('Code Coverage') {
-            steps {
-                echo '📈 Generating JaCoCo Coverage Report...'
-                dir('manager') {
-                    sh '''
-                        ./mvnw jacoco:report -B
-                    '''
-                }
-            }
-            post {
-                always {
-                    publishCoverage adapters: [
-                        jacocoAdapter(
-                            path: 'manager/target/site/jacoco/jacoco.xml'
-                        )
-                    ],
-                    sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-                    
-                    // Optional: Keep the HTML report as well
-                    publishHTML(target: [
-                        allowMissing: true,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'manager/target/site/jacoco',
-                        reportFiles: 'index.html',
-                        reportName: 'JaCoCo Coverage Report'
-                    ])
-                }
-            }
+    steps {
+        echo '📈 Generating JaCoCo Coverage Report...'
+        dir('manager') {
+            sh '''
+                ./mvnw jacoco:report -B
+            '''
         }
+    }
+    post {
+        always {
+            recordCoverage(
+                tools: [[parser: 'JACOCO']],
+                id: 'jacoco', 
+                name: 'JaCoCo Coverage',
+                sourceCodeRetention: 'EVERY_BUILD',
+                qualityGates: [
+                    [threshold: 60.0, metric: 'LINE', baseline: 'PROJECT', unstable: true],
+                    [threshold: 60.0, metric: 'BRANCH', baseline: 'PROJECT', unstable: true]
+                ]
+            )
+            
+            // Optional: Keep the HTML report as well
+            publishHTML(target: [
+                allowMissing: true,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: 'manager/target/site/jacoco',
+                reportFiles: 'index.html',
+                reportName: 'JaCoCo Coverage Report'
+            ])
+        }
+    }
+}
 
             stage('Build Application') {
                 steps {
