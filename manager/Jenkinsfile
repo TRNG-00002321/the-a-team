@@ -36,7 +36,7 @@ pipeline {
         stage('Setup') {
             steps {
                 echo '🔧 Setting up build environment...'
-                dir('manager') {
+                dir('manager-app/manager') {
                     sh '''
                         mkdir -p target/allure-results
                         mkdir -p target/surefire-reports
@@ -50,7 +50,7 @@ pipeline {
         stage('Debug Paths') {
             steps {
                 echo '🔍 Debugging volume mount paths...'
-                dir('manager') {
+                dir('manager-app/manager') {
                     sh '''
                         echo "Current directory: $(pwd)"
                         echo "Listing current directory:"
@@ -69,7 +69,7 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 echo '🧪 Running Unit Tests...'
-                dir('manager') {
+                dir('manager-app/manager') {
                     sh '''
                         docker run --rm \
                             -v $(pwd):/app \
@@ -118,7 +118,7 @@ pipeline {
         stage('Code Coverage') {
             steps {
                 echo '📈 Generating JaCoCo Coverage Report...'
-                dir('manager') {
+                dir('manager-app/manager') {
                     sh '''
                         docker run --rm \
                             -v $(pwd):/app \
@@ -152,7 +152,7 @@ pipeline {
         stage('Build Application') {
             steps {
                 echo '📦 Building JAR file...'
-                dir('manager') {
+                dir('manager-app/manager') {
                     sh '''
                         docker run --rm \
                             -v $(pwd):/app \
@@ -168,7 +168,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo '🐳 Building Docker image...'
-                dir('manager') {
+                dir('manager-app/manager') {
                     sh '''
                         docker build \
                             -t ${APP_NAME}:${BUILD_VERSION} \
@@ -217,7 +217,7 @@ pipeline {
         stage('E2E Tests with Cucumber') {
             steps {
                 echo '🌐 Running E2E Tests with Cucumber + Selenium...'
-                dir('manager') {
+                dir('manager-app/manager') {
                     sh '''
                         docker run -d \
                             --name selenium-chrome \
