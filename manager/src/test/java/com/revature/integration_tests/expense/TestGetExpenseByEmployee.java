@@ -6,6 +6,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
@@ -46,9 +48,10 @@ public class TestGetExpenseByEmployee {
     }
 
     // MI-213
-    @Test
-    void getExpensesByEmployee_success() {
-        int employeeId = 1;
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2})
+    void getExpensesByEmployee_success(int employeeId) {
+
         String jwt = loginAndGetJwtCookie();
 
         given()
@@ -65,9 +68,10 @@ public class TestGetExpenseByEmployee {
     }
 
     // MI-214
-    @Test
-    void getExpensesByEmployee_failure() {
-        int invalidEmployeeId = 1000;
+    @ParameterizedTest
+    @ValueSource(ints = {999, 1000})
+    void getExpensesByEmployee_failure(int invalidEmployeeId) {
+
         String jwt = loginAndGetJwtCookie();
 
         given()
