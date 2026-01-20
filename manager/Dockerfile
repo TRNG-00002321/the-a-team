@@ -19,7 +19,7 @@ RUN echo "=== Checking JAR contents ===" && \
     jar tf target/manager-1.0-SNAPSHOT.jar | grep -E '\.(html|js|css)$' || echo "WARNING: No static files found in JAR!"
 
 # Production stage
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 
