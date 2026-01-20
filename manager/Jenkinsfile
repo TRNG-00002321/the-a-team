@@ -142,30 +142,8 @@ pipeline {
                 echo '🔗 Running Integration Tests...'
                 dir('manager') {
                     sh '''
-                        echo "Waiting for application to start..."
-                        i=1
-                        while [ $i -le 30 ]; do
-                            if wget -q --spider http://localhost:${APP_PORT}/health 2>/dev/null; then
-                                echo "✅ Application is ready!"
-                                exit 0
-                            fi
-                            echo "Attempt $i/30: Waiting for health check..."
-                            sleep 2
-                            i=$((i + 1))
-                        done
-
-                        echo "❌ Application failed to start"
-                        docker logs ${APP_NAME}-test
-                        exit 1
-
-                        docker run --rm \
-                            -v $(pwd):/app \
-                            -v ${MAVEN_CACHE}:/root/.m2 \
-                            -w /app \
-                            -e TEST_MODE=true \
-                            maven:3.9-eclipse-temurin-17 \
-                            mvn test \
-                            -Dtest="**/integration_tests/**/*Test.java" \
+                            ./mvnw test \
+                            -Dtest="**/integration_tests/**/Test*.java" \
                             -DfailIfNoTests=false \
                             -B
                     '''
