@@ -72,7 +72,7 @@ pipeline {
                 dir('manager') {
                     sh '''
                     ./mvnw test \
-                    -Dtest="**/unit_tests/**/*Test.java" \
+                    -Dtest="**/unit_tests/**/Test*.java" \
                     -DfailIfNoTests=false \
                     -B
                     '''
