@@ -137,16 +137,9 @@ pipeline {
             
             echo "Waiting for application to start..."
             sleep 10
-            i=1
-            while [ $i -le 10 ]; do
-                if wget -q --spider http://localhost:${APP_PORT}/health 2>/dev/null; then
-                    echo "✅ Application is ready!"
-                    exit 0
-                fi
-                echo "Attempt $i/30: Waiting for health check..."
-                sleep 2
-                i=$((i + 1))
-            done
+            echo "❌ Application failed to start"
+            docker logs ${APP_NAME}-test
+            exit 1
             '''
         }
 }
