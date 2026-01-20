@@ -1,0 +1,34 @@
+services:
+  selenium:
+    image: selenium/standalone-chrome:latest
+    ports:
+      - "4444:4444"
+    shm_size: 2gb
+
+  employee:
+    build: ./employee
+    ports:
+      - "5000:5000"
+    depends_on:
+      - selenium
+    environment:
+      TEST_MODE: "true"
+      BROWSER: chrome
+      HEADLESS: "true"
+      DATABASE_PATH: /app/expense_manager.db
+      TEST_DATABASE_PATH: /app/tests/test_db/test_expense_manager.db
+      SELENIUM_REMOTE_URL: http://selenium:4444/wd/hub
+    # volumes:
+    #   - db-data:/data
+
+#   manager:
+#     build: ./manager
+#     ports:
+#       - "5001:5001"
+#     environment:
+#       DATABASE_PATH: /data/expense_manager.db
+#     volumes:
+#       - db-data:/data
+
+# volumes:
+#   db-data:
