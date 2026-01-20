@@ -1,6 +1,16 @@
 import os
+import sys
 from src.repository import DatabaseConnection
 from tests.end_to_end_test.drivers.browser_manager import create_driver
+
+# CRITICAL DEBUG - Add this RIGHT after imports
+sys.stderr.write("\n" + "="*60 + "\n")
+sys.stderr.write("ENVIRONMENT.PY LOADED\n")
+sys.stderr.write(f"create_driver function: {create_driver}\n")
+sys.stderr.write(f"create_driver module: {create_driver.__module__}\n")
+sys.stderr.write("="*60 + "\n\n")
+sys.stderr.flush()
+
 
 SEED_SQL_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "../../sql/seed.sql")
@@ -42,6 +52,12 @@ def before_scenario(context, scenario):
     # --- Browser setup ---
     browser = os.getenv("BROWSER", "chrome").lower()
     headless = os.getenv("HEADLESS", "false").lower() == "true"
+
+    sys.stderr.write("\n" + "="*60 + "\n")
+    sys.stderr.write("BEFORE_SCENARIO - About to call create_driver()\n")
+    sys.stderr.write(f"  browser={browser}, headless={headless}\n")
+    sys.stderr.write("="*60 + "\n\n")
+    sys.stderr.flush()
 
     context.driver = create_driver(browser, headless)
     context.driver.maximize_window()
