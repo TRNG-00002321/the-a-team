@@ -168,7 +168,7 @@ pipeline {
                         curl -f ${APP_URL}/actuator/health || curl -f ${APP_URL}/health || echo "App is running"
                         
                         ./mvnw test \
-                            -Dtest="**/integration_tests/**/*Test.java" \
+                            -Dtest="**/integration_tests/**/Test*.java" \
                             -Dapp.url=${APP_URL} \
                             -DfailIfNoTests=false \
                             -B
