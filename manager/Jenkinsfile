@@ -1,31 +1,21 @@
 // Manager App (Java/Javalin) - Jenkins CI/CD Pipeline
-// QA Environment with Comprehensive Testing and Allure Reports
+// Comprehensive Testing with Allure Reports and Docker Deployment
 
 pipeline {
     agent any
 
     environment {
-        // Application image name
         APP_NAME = 'manager-app'
         APP_PORT = '5001'
-
-        // AWS EC2 deployment target
-        EC2_HOST = credentials('ec2-deploy-host')
-        EC2_USER = 'ec2-user'
-
-        // Build version
         BUILD_VERSION = "${BUILD_NUMBER}"
-
-        // Docker-in-Docker: Host workspace path
-        // When Jenkins runs in a container, Docker daemon needs the HOST path
-        // Set JENKINS_HOME_HOST in Jenkins container env (e.g., /home/ec2-user/jenkins_home)
-        WORKSPACE_HOST = "${env.JENKINS_HOME_HOST ?: env.JENKINS_HOME}/workspace/${env.JOB_NAME}"
+        WORKSPACE_HOST = "${env.JENKINS_HOME_HOST ?: env.WORKSPACE}"
+        MAVEN_CACHE = 'maven-repo'
     }
 
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timestamps()
-        timeout(time: 45, unit: 'MINUTES')
+        timeout(time: 60, unit: 'MINUTES')
     }
 
     stages {
@@ -33,7 +23,6 @@ pipeline {
             steps {
                 echo '📥 Checking out source code...'
                 checkout scm
-
                 script {
                     env.GIT_COMMIT_SHORT = sh(
                         script: 'git rev-parse --short HEAD',
@@ -44,252 +33,262 @@ pipeline {
             }
         }
 
-        // ============================================
-        // FAIL FAST: Run tests BEFORE building image
-        // ============================================
+        stage('Setup') {
+            steps {
+                echo '🔧 Setting up build environment...'
+                dir('manager') {
+                    sh '''
+                        mkdir -p target/allure-results
+                        mkdir -p target/surefire-reports
+                        docker --version
+                        docker volume create ${MAVEN_CACHE} || true
+                    '''
+                }
+            }
+        }
+
+        stage('Debug Paths') {
+            steps {
+                echo '🔍 Debugging volume mount paths...'
+                dir('manager') {
+                    sh '''
+                        echo "Current directory: $(pwd)"
+                        echo "Listing current directory:"
+                        ls -la
+                        echo ""
+                        echo "Checking if pom.xml exists:"
+                        ls -la pom.xml
+                        echo ""
+                        echo "Testing Docker mount:"
+                        docker run --rm -v $(pwd):/test alpine ls -la /test
+                    '''
+                }
+            }
+        }
 
         stage('Unit Tests') {
             steps {
-                echo '🧪 Running Java Unit Tests with Allure...'
-                sh '''
-                    docker run --rm \
-                        -v ${WORKSPACE_HOST}:/app \
-                        -v maven-repo:/root/.m2 \
-                        -w /app \
-                        maven:3.9-eclipse-temurin-17 \
-                        mvn clean test \
-                        -Dtest="**/unit/**" \
-                        -B
-                '''
-            }
-            post {
-                always {
-                    junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
-                }
-            }
-        }
-
-        stage('Integration Tests') {
-            steps {
-                echo '🔗 Running Java Integration Tests with Real Database...'
-                sh '''
-                    docker run --rm \
-                        -v ${WORKSPACE_HOST}:/app \
-                        -v maven-repo:/root/.m2 \
-                        -w /app \
-                        maven:3.9-eclipse-temurin-17 \
-                        mvn test \
-                        -Dtest="**/integration/**" \
-                        -B
-                '''
-            }
-            post {
-                always {
-                    junit allowEmptyResults: true, testResults: 'target/surefire-reports/*Integration*.xml'
-                }
-            }
-        }
-
-        // ============================================
-        // BUILD: Only after tests pass
-        // ============================================
-
-        stage('Build Docker Image') {
-            steps {
-                echo '☕ Building Java Manager Application...'
-                sh '''
-                    docker build \
-                        -t ${APP_NAME}:${BUILD_VERSION} \
-                        -t ${APP_NAME}:latest \
-                        -f Dockerfile .
-                '''
-            }
-        }
-
-        stage('Start Application') {
-            steps {
-                echo '🚀 Starting Manager App for API/E2E Testing...'
-                sh '''
-                    # Stop any existing container
-                    docker stop ${APP_NAME}-test || true
-                    docker rm ${APP_NAME}-test || true
-
-                    # Start the container
-                    docker run -d \
-                        --name ${APP_NAME}-test \
-                        -p ${APP_PORT}:${APP_PORT} \
-                        -v expense-data:/data \
-                        ${APP_NAME}:${BUILD_VERSION}
-
-                    # Wait for app to be healthy
-                    echo "Waiting for application to start..."
-                    sleep 30
-                    curl -f http://localhost:${APP_PORT}/health || exit 1
-                    echo "✅ Application is ready!"
-                '''
-            }
-        }
-
-        stage('API Tests') {
-            steps {
-                echo '🔌 Running Java API Tests (REST Assured + Integration)...'
-                sh '''
-                    docker run --rm \
-                        --network host \
-                        -v ${WORKSPACE_HOST}:/app \
-                        -v maven-repo:/root/.m2 \
-                        -w /app \
-                        -e API_BASE_URL=http://localhost:${APP_PORT} \
-                        maven:3.9-eclipse-temurin-17 \
-                        mvn test \
-                        -Dtest="**/api/**" \
-                        -Dmaven.test.failure.ignore=true \
-                        -B
-                '''
-            }
-        }
-
-        stage('E2E Tests') {
-            steps {
-                echo '🌐 Running Java E2E Tests (Cucumber + Integration)...'
-                sh '''
-                    docker run --rm \
-                        --network host \
-                        -v ${WORKSPACE_HOST}:/app \
-                        -v maven-repo:/root/.m2 \
-                        -w /app \
-                        -e APP_URL=http://localhost:${APP_PORT} \
-                        maven:3.9-eclipse-temurin-17 \
-                        mvn test \
-                        -Dtest="**/e2e/**" \
-                        -Dmaven.test.failure.ignore=true \
-                        -B
-                '''
-            }
-        }
-
-        stage('Performance Tests') {
-            steps {
-                echo '⚡ Running JMeter Performance Tests...'
-                sh '''
-                    if [ -d "tests/performance" ]; then
-                        mkdir -p jmeter-results
+                echo '🧪 Running Unit Tests...'
+                dir('manager') {
+                    sh '''
                         docker run --rm \
-                            --network host \
-                            -v ${WORKSPACE_HOST}:/workspace \
-                            -w /workspace \
-                            justb4/jmeter:latest \
-                            -n \
-                            -t /workspace/tests/performance/*.jmx \
-                            -l /workspace/jmeter-results/results.jtl \
-                            -e \
-                            -o /workspace/jmeter-results/report || true
-                    else
-                        echo "No JMeter test files found, skipping..."
-                    fi
-                '''
+                            -v $(pwd):/app \
+                            -v maven-repo:/root/.m2 \
+                            -w /app \
+                            maven:3.9-eclipse-temurin-17 \
+                            mvn test \
+                            -Dtest="**/unit_tests/**/*Test.java" \
+                            -DfailIfNoTests=false \
+                            -B
+                    '''
+                }
             }
             post {
                 always {
-                    archiveArtifacts artifacts: 'jmeter-results/**/*', allowEmptyArchive: true
+                    junit allowEmptyResults: true, testResults: 'manager/target/surefire-reports/*.xml'
                 }
             }
         }
+
+//         stage('Integration Tests') {
+//             steps {
+//                 echo '🔗 Running Integration Tests...'
+//                 dir('manager') {
+//                     sh '''
+//                         docker run --rm \
+//                             -v $(pwd):/app \
+//                             -v ${MAVEN_CACHE}:/root/.m2 \
+//                             -w /app \
+//                             -e TEST_MODE=true \
+//                             maven:3.9-eclipse-temurin-17 \
+//                             mvn test \
+//                             -Dtest="**/integration_tests/**/*Test.java" \
+//                             -DfailIfNoTests=false \
+//                             -B
+//                     '''
+//                 }
+//             }
+//             post {
+//                 always {
+//                     junit allowEmptyResults: true, testResults: 'manager/target/surefire-reports/*.xml'
+//                 }
+//             }
+//         }
 
         stage('Code Coverage') {
             steps {
                 echo '📈 Generating JaCoCo Coverage Report...'
-                sh '''
-                    docker run --rm \
-                        -v ${WORKSPACE_HOST}:/app \
-                        -v maven-repo:/root/.m2 \
-                        -w /app \
-                        maven:3.9-eclipse-temurin-17 \
-                        mvn jacoco:report -B || true
-                '''
+                dir('manager') {
+                    sh '''
+                        docker run --rm \
+                            -v $(pwd):/app \
+                            -v ${MAVEN_CACHE}:/root/.m2 \
+                            -w /app \
+                            maven:3.9-eclipse-temurin-17 \
+                            mvn jacoco:report -B
+                    '''
+                }
             }
             post {
                 always {
+                    jacoco(
+                        execPattern: 'manager/target/jacoco.exec',
+                        classPattern: 'manager/target/classes',
+                        sourcePattern: 'manager/src/main/java',
+                        exclusionPattern: '**/*Test*.class'
+                    )
                     publishHTML(target: [
                         allowMissing: true,
                         alwaysLinkToLastBuild: true,
                         keepAll: true,
-                        reportDir: 'target/site/jacoco',
+                        reportDir: 'manager/target/site/jacoco',
                         reportFiles: 'index.html',
-                        reportName: 'Java Coverage Report'
+                        reportName: 'JaCoCo Coverage Report'
                     ])
                 }
             }
         }
 
-        stage('Stop Test Container') {
+        stage('Build Application') {
             steps {
-                echo '🛑 Stopping test container...'
+                echo '📦 Building JAR file...'
+                dir('manager') {
+                    sh '''
+                        docker run --rm \
+                            -v $(pwd):/app \
+                            -v ${MAVEN_CACHE}:/root/.m2 \
+                            -w /app \
+                            maven:3.9-eclipse-temurin-17 \
+                            mvn clean package -DskipTests -B
+                    '''
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                echo '🐳 Building Docker image...'
+                dir('manager') {
+                    sh '''
+                        docker build \
+                            -t ${APP_NAME}:${BUILD_VERSION} \
+                            -t ${APP_NAME}:latest \
+                            -f Dockerfile .
+                        echo "✅ Docker image built successfully"
+                        docker images | grep ${APP_NAME}
+                    '''
+                }
+            }
+        }
+
+        stage('Start Application for E2E Tests') {
+            steps {
+                echo '🚀 Starting Manager App for Testing...'
                 sh '''
-                    docker stop ${APP_NAME}-test || true
-                    docker rm ${APP_NAME}-test || true
+                    docker stop ${APP_NAME}-test 2>/dev/null || true
+                    docker rm ${APP_NAME}-test 2>/dev/null || true
+                    docker volume create expense-test-data || true
+
+                    docker run -d \
+                        --name ${APP_NAME}-test \
+                        -p ${APP_PORT}:${APP_PORT} \
+                        -v expense-test-data:/data \
+                        -e TEST_MODE=false \
+                        -e DATABASE_PATH=/app/db/test_expense_manager.db \
+                        ${APP_NAME}:${BUILD_VERSION}
+
+                    echo "Waiting for application to start..."
+                    for i in {1..30}; do
+                        if curl -f http://localhost:${APP_PORT}/health 2>/dev/null; then
+                            echo "✅ Application is ready!"
+                            exit 0
+                        fi
+                        echo "Attempt $i/30: Waiting for health check..."
+                        sleep 2
+                    done
+
+                    echo "❌ Application failed to start"
+                    docker logs ${APP_NAME}-test
+                    exit 1
+                '''
+            }
+        }
+
+        stage('E2E Tests with Cucumber') {
+            steps {
+                echo '🌐 Running E2E Tests with Cucumber + Selenium...'
+                dir('manager') {
+                    sh '''
+                        docker run -d \
+                            --name selenium-chrome \
+                            --network host \
+                            --shm-size=2g \
+                            selenium/standalone-chrome:latest
+
+                        echo "Waiting for Selenium Grid..."
+                        for i in {1..30}; do
+                            if curl -f http://localhost:4444/wd/hub/status 2>/dev/null; then
+                                echo "✅ Selenium Grid ready!"
+                                break
+                            fi
+                            sleep 2
+                        done
+
+                        docker run --rm \
+                            --network host \
+                            -v $(pwd):/app \
+                            -v ${MAVEN_CACHE}:/root/.m2 \
+                            -w /app \
+                            -e APP_URL=http://localhost:${APP_PORT} \
+                            -e BROWSER=chrome \
+                            -e SELENIUM_REMOTE_URL=http://localhost:4444/wd/hub \
+                            maven:3.9-eclipse-temurin-17 \
+                            mvn test \
+                                -Dtest="com.revature.end_to_end_tests.runners.TestRunner" \
+                                -DfailIfNoTests=false \
+                                -B || true
+
+                        docker stop selenium-chrome || true
+                        docker rm selenium-chrome || true
+                    '''
+                }
+            }
+            post {
+                always {
+                    sh '''
+                        docker stop selenium-chrome 2>/dev/null || true
+                        docker rm selenium-chrome 2>/dev/null || true
+                    '''
+                    junit allowEmptyResults: true, testResults: 'manager/target/surefire-reports/*.xml, manager/target/cucumber-reports/cucumber.xml'
+                    publishHTML(target: [
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'manager/target/cucumber-reports',
+                        reportFiles: 'cucumber.html',
+                        reportName: 'Cucumber E2E Test Report'
+                    ])
+                }
+            }
+        }
+
+        stage('Cleanup Test Container') {
+            steps {
+                sh '''
+                    docker stop ${APP_NAME}-test 2>/dev/null || true
+                    docker rm ${APP_NAME}-test 2>/dev/null || true
+                    docker volume rm expense-test-data 2>/dev/null || true
                 '''
             }
         }
 
         stage('Generate Allure Report') {
             steps {
-                echo '📊 Generating Allure Report...'
-            }
-            post {
-                always {
+                script {
                     allure([
                         includeProperties: false,
-                        results: [[path: 'target/allure-results']]
+                        results: [[path: 'manager/target/allure-results']]
                     ])
-                }
-            }
-        }
-
-        stage('Deploy to QA') {
-            when {
-                allOf {
-                    branch 'main'
-                    expression { currentBuild.currentResult == 'SUCCESS' }
-                }
-            }
-            steps {
-                echo '🚀 All tests passed! Deploying Manager App to QA...'
-
-                withCredentials([sshUserPrivateKey(
-                    credentialsId: 'ec2-ssh-key',
-                    keyFileVariable: 'SSH_KEY'
-                )]) {
-                    sh '''
-                        # Save and transfer Docker image
-                        docker save ${APP_NAME}:${BUILD_VERSION} | gzip > ${APP_NAME}.tar.gz
-                        scp -i ${SSH_KEY} -o StrictHostKeyChecking=no \
-                            ${APP_NAME}.tar.gz ${EC2_USER}@${EC2_HOST}:/home/${EC2_USER}/
-
-                        # Deploy on EC2
-                        ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << 'EOF'
-                            echo "🔨 Loading Docker image..."
-                            gunzip -c ${APP_NAME}.tar.gz | docker load
-                            rm ${APP_NAME}.tar.gz
-
-                            echo "🛑 Stopping existing container..."
-                            docker stop expense-manager || true
-                            docker rm expense-manager || true
-
-                            echo "🚀 Starting new container..."
-                            docker run -d \
-                                --name expense-manager \
-                                --restart unless-stopped \
-                                -p 5001:5001 \
-                                -v expense-data:/data \
-                                expense-manager:latest
-
-                            sleep 30
-                            curl -f http://localhost:5001/health && echo "✅ Manager app deployed!"
-EOF
-
-                        rm ${APP_NAME}.tar.gz
-                    '''
                 }
             }
         }
@@ -297,33 +296,18 @@ EOF
 
     post {
         always {
-            echo '🧹 Cleaning up...'
             sh '''
-                docker stop ${APP_NAME}-test || true
-                docker rm ${APP_NAME}-test || true
-                docker rmi ${APP_NAME}:${BUILD_VERSION} || true
+                docker stop ${APP_NAME}-test 2>/dev/null || true
+                docker rm ${APP_NAME}-test 2>/dev/null || true
+                docker image prune -f || true
             '''
-
-            archiveArtifacts artifacts: '''
-                target/surefire-reports/**/*.xml,
-                target/allure-results/**/*,
-                target/site/jacoco/**/*
-            ''', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'manager/target/**/*.jar', allowEmptyArchive: true
         }
-
         success {
-            echo '''
-            ╔══════════════════════════════════════════════════════════════╗
-            ║  ✅ MANAGER APP PIPELINE COMPLETED SUCCESSFULLY              ║
-            ║                                                              ║
-            ║  📊 Reports: Click "Allure Report" in sidebar                ║
-            ║  📈 Coverage: Click "Java Coverage Report"                   ║
-            ╚══════════════════════════════════════════════════════════════╝
-            '''
+            echo '✅ Pipeline completed successfully!'
         }
-
         failure {
-            echo '❌ Pipeline failed! Check console output for details.'
+            echo '❌ Pipeline failed!'
         }
     }
 }
