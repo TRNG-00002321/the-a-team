@@ -6,7 +6,6 @@ import com.revature.repository.ExpenseRepository;
 import com.revature.repository.ExpenseWithUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -52,39 +51,38 @@ public class TestExpenseRepository {
      * FIND BY ID TESTS                                                                                 *
      ****************************************************************************************************/
 
-    //MU-094
-    @Test
-    @DisplayName("Test findById Throws Exception")
-    public void testFindById_databaseException() throws Exception {
-        int expenseId = 1;
-        when(preparedStatement.executeQuery()).thenThrow(new SQLException("DB failure"));
-
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
-                () -> expenseRepo.findById(expenseId)
-        );
-
-        assertTrue(exception.getMessage().contains("Error finding expense by ID: " + expenseId));
-        assertNotNull(exception.getCause());
-        assertInstanceOf(SQLException.class, exception.getCause());
-    }
-
-    //MU-095, MU-096
+    //MU-094, MU-095, MU-096
     @ParameterizedTest
     @CsvSource({
-            "false, true",   // Empty result
-            "true, false"    // Has result
+            "true, false, false, ''",                    // MU-096: Has result
+            "false, true, false, ''",                    // MU-095: Empty result
+            "false, false, true, 'DB failure'"          // MU-094: Exception thrown
     })
-    @DisplayName("Test findById Returns Optional")
-    public void testFindById_ReturnsOptional(boolean hasResult, boolean expectEmpty) throws SQLException {
+    @DisplayName("Test findById All Scenarios")
+    public void testFindById_AllScenarios(
+            boolean hasResult,
+            boolean expectEmpty,
+            boolean throwException,
+            String errorMessage
+    ) throws SQLException {
         int expenseId = 1;
-        when(preparedStatement.executeQuery()).thenReturn(resultSet);
-        when(resultSet.next()).thenReturn(hasResult);
 
-        Optional<Expense> result = expenseRepo.findById(expenseId);
+        if (throwException) {
+            when(preparedStatement.executeQuery()).thenThrow(new SQLException(errorMessage));
+            RuntimeException exception = assertThrows(
+                    RuntimeException.class,
+                    () -> expenseRepo.findById(expenseId)
+            );
+            assertTrue(exception.getMessage().contains("Error finding expense by ID: " + expenseId));
+            assertInstanceOf(SQLException.class, exception.getCause());
+        } else {
+            when(preparedStatement.executeQuery()).thenReturn(resultSet);
+            when(resultSet.next()).thenReturn(hasResult);
 
-        assertNotNull(result);
-        assertEquals(expectEmpty, result.isEmpty());
+            Optional<Expense> result = expenseRepo.findById(expenseId);
+            assertNotNull(result);
+            assertEquals(expectEmpty, result.isEmpty());
+        }
     }
 
     /****************************************************************************************************

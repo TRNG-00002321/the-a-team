@@ -50,81 +50,75 @@ public class TestApprovalRepository {
     /****************************************************************************************************
      * FIND BY EXPENSE ID TESTS                                                                         *
      ****************************************************************************************************/
-    //MU-132
-    @Test
-    @DisplayName("Test findByExpenseId Throws Exception")
-    public void testFindByExpenseId_databaseException() throws Exception {
-        int expenseId = 1;
-        when(preparedStatement.executeQuery()).thenThrow(new SQLException("DB failure"));
-
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
-                () -> approvalRepo.findByExpenseId(expenseId)
-        );
-
-        assertTrue(exception.getMessage().contains("Error finding approval for expense: " + expenseId));
-        assertNotNull(exception.getCause());
-        assertInstanceOf(SQLException.class, exception.getCause());
-    }
-
-    //MU-133, MU-134
+    //MU-132, MU-133, MU-134
     @ParameterizedTest
     @CsvSource({
-            "false, true",  // Empty result
-            "true, false"   // Has result
+            "true, false, false, ''",                    // MU-134: Has result
+            "false, true, false, ''",                    // MU-133: Empty result
+            "false, false, true, 'DB failure'"          // MU-132: Exception thrown
     })
-    @DisplayName("Test findByExpenseId Returns Optional")
-    public void testFindByExpenseId_ReturnsOptional(boolean hasResult, boolean expectEmpty) throws Exception {
+    @DisplayName("Test findByExpenseId All Scenarios")
+    public void testFindByExpenseId_AllScenarios(
+            boolean hasResult,
+            boolean expectEmpty,
+            boolean throwException,
+            String errorMessage
+    ) throws Exception {
         int expenseId = 1;
-        when(preparedStatement.executeQuery()).thenReturn(resultSet);
-        when(resultSet.next()).thenReturn(hasResult, false);
 
-        Optional<Approval> result = approvalRepo.findByExpenseId(expenseId);
+        if (throwException) {
+            when(preparedStatement.executeQuery()).thenThrow(new SQLException(errorMessage));
+            RuntimeException exception = assertThrows(
+                    RuntimeException.class,
+                    () -> approvalRepo.findByExpenseId(expenseId)
+            );
+            assertTrue(exception.getMessage().contains("Error finding approval for expense: " + expenseId));
+            assertInstanceOf(SQLException.class, exception.getCause());
+        } else {
+            when(preparedStatement.executeQuery()).thenReturn(resultSet);
+            when(resultSet.next()).thenReturn(hasResult, false);
 
-        assertNotNull(result);
-        assertEquals(expectEmpty, result.isEmpty());
+            Optional<Approval> result = approvalRepo.findByExpenseId(expenseId);
+            assertNotNull(result);
+            assertEquals(expectEmpty, result.isEmpty());
+        }
     }
 
     /****************************************************************************************************
      * UPDATE APPROVAL STATUS TESTS                                                                     *
      ****************************************************************************************************/
-    //MU-135
-    @Test
-    @DisplayName("Test updateApprovalStatus Throws Exception")
-    public void testUpdateApprovalStatus_Exception() throws SQLException {
-        int expenseId = 1;
-        String status = "denied";
-        int reviewerId = 1;
-        String comment = "test comment";
-        when(preparedStatement.executeUpdate()).thenThrow(new SQLException("DB failure"));
-
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
-                () -> approvalRepo.updateApprovalStatus(expenseId, status, reviewerId, comment)
-        );
-
-        assertTrue(exception.getMessage().contains("Error updating approval for expense: " + expenseId));
-        assertNotNull(exception.getCause());
-        assertInstanceOf(SQLException.class, exception.getCause());
-    }
-
-    //MU-136, MU-137
+    //MU-135, MU-136, MU-137
     @ParameterizedTest
     @CsvSource({
-            "0, false",  // No rows updated
-            "1, true"    // Row updated
+            "0, false, false, ''",                // MU-136: No rows updated
+            "1, true, false, ''",                 // MU-137: Row updated
+            "0, false, true, 'DB failure'"       // MU-135: Exception thrown
     })
-    @DisplayName("Test updateApprovalStatus Returns Boolean")
-    public void testUpdateApprovalStatus_ReturnsBoolean(int rowsUpdated, boolean expectedResult) throws SQLException {
+    @DisplayName("Test updateApprovalStatus All Scenarios")
+    public void testUpdateApprovalStatus_AllScenarios(
+            int rowsUpdated,
+            boolean expectedResult,
+            boolean throwException,
+            String errorMessage
+    ) throws SQLException {
         int expenseId = 1;
         String status = "denied";
         int reviewerId = 1;
         String comment = "test comment";
-        when(preparedStatement.executeUpdate()).thenReturn(rowsUpdated);
 
-        boolean result = approvalRepo.updateApprovalStatus(expenseId, status, reviewerId, comment);
-
-        assertEquals(expectedResult, result);
+        if (throwException) {
+            when(preparedStatement.executeUpdate()).thenThrow(new SQLException(errorMessage));
+            RuntimeException exception = assertThrows(
+                    RuntimeException.class,
+                    () -> approvalRepo.updateApprovalStatus(expenseId, status, reviewerId, comment)
+            );
+            assertTrue(exception.getMessage().contains("Error updating approval for expense: " + expenseId));
+            assertInstanceOf(SQLException.class, exception.getCause());
+        } else {
+            when(preparedStatement.executeUpdate()).thenReturn(rowsUpdated);
+            boolean result = approvalRepo.updateApprovalStatus(expenseId, status, reviewerId, comment);
+            assertEquals(expectedResult, result);
+        }
     }
 
     //MU-138
