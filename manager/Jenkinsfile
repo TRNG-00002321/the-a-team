@@ -139,7 +139,6 @@ pipeline {
             sleep 10
             echo "❌ Application failed to start"
             docker logs ${APP_NAME}-test
-            exit 0
             '''
         }
 }
