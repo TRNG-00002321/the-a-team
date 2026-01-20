@@ -71,15 +71,10 @@ pipeline {
                 echo '🧪 Running Unit Tests...'
                 dir('manager') {
                     sh '''
-                        docker run --rm \
-                            -v $(pwd):/app \
-                            -v maven-repo:/root/.m2 \
-                            -w /app \
-                            maven:3.9-eclipse-temurin-17 \
-                            mvn test \
-                            -Dtest="**/unit_tests/**/*Test.java" \
-                            -DfailIfNoTests=false \
-                            -B
+                    ./mvnw test \
+                    -Dtest="**/unit_tests/**/*Test.java" \
+                    -DfailIfNoTests=false \
+                    -B
                     '''
                 }
             }
