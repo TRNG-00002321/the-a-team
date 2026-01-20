@@ -9,6 +9,8 @@ import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import io.restassured.specification.ResponseSpecification;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
@@ -45,9 +47,10 @@ public class TestPostDenyExpense {
         TestDatabaseUtil.resetAndSeed();
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 3,4,5})
     @DisplayName("POST /api/expense/{id}/deny expense with valid login and valid expense")
-    void testDenyExpense_AsManager_Positive() {
+    void testDenyExpense_AsManager_Positive(int expenseId) {
         // perform login first
         String credentials = """
                  {
@@ -67,7 +70,7 @@ public class TestPostDenyExpense {
         String jwtCookie = response1.getCookie("jwt");
 
         // Deny pending expense
-        int expenseId = 1;
+
 
         Response denyResponse =
                 given()
@@ -84,9 +87,10 @@ public class TestPostDenyExpense {
         assertEquals("Expense denied successfully", message);
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(ints = {-1, 332, 9999})
     @DisplayName("POST /api/expense/{id}/deny expense with valid login and non existent expense")
-    void testDenyExpense_AsManager_NonexistentExpense(){
+    void testDenyExpense_AsManager_NonexistentExpense(int expenseId){
         // perform login first
         String credentials = """
                  {
@@ -110,25 +114,28 @@ public class TestPostDenyExpense {
                 given()
                         .cookie("jwt", jwtCookie)
                         .when()
-                        .post("/api/expenses/999/deny")
+                        .post("/api/expenses/"+expenseId+"/deny")
                         .then()
                         .statusCode(404)
                         .extract().response();
 
 
     }
-    @Test
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 9999})
     @DisplayName("Deny Expense without authentication")
-    void testdenyNOAuth(){
+    void testdenyNOAuth(int expenseId){
         Response deny =
                 given()
                         .when()
-                        .post("/api/expenses/999/deny")
+                        .post("/api/expenses/"+expenseId+"/deny")
                         .then()
                         .statusCode(401)
                         .extract().response();
 
-        }
+    }
+
+
     @Test
     @DisplayName("Invalid role authentication")
     void testEmployeeAuth(){

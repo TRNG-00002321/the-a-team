@@ -1,7 +1,7 @@
 import pytest
 import os
 
-from src.main import create_app
+from main import create_app
 from src.repository import DatabaseConnection
 
 BASE_URL = "http://127.0.0.1:5000/"

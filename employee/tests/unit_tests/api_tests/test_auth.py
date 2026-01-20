@@ -2,9 +2,8 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
-from flask import Flask, request, jsonify
+from flask import Flask
 from src.api.auth import require_employee_auth
-from src.repository import User, Expense
 import src.api.expense_controller as expense_controller
 
 @pytest.fixture
