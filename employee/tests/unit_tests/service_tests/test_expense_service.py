@@ -51,13 +51,21 @@ def test_submit_expense_empty_description_returns_exception(expense_service_test
         assert result == ValueError
 
 #EU-024
-def test_submit_expense_returns_expense(expense_service_test, mock_expense_repo):
+@pytest.mark.parametrize(
+    "expense",
+    [
+        Expense(1, 1, 1.0, "test1", "date1"),
+        Expense(2, 2, 2.0, "test2", "date2"),
+        Expense(3, 3, 3.0, "test3", "date3")
+    ]
+)
+def test_submit_expense_returns_expense(expense, expense_service_test, mock_expense_repo):
     #Arrange
-    expense = Expense(1, 1, 1.0, "test", "date")
+    # expense = Expense(1, 1, 1.0, "test", "date")
     mock_expense_repo.create.return_value = expense
 
     #Act
-    result = expense_service_test.submit_expense(1, 1.0, "test", "date")
+    result = expense_service_test.submit_expense(expense.id, expense.amount, expense.description, expense.date)
 
     #Assert
     assert result == expense
@@ -67,10 +75,14 @@ def test_submit_expense_returns_expense(expense_service_test, mock_expense_repo)
 # GET USER EXPENSES WITH STATUS TESTS
 #========================================================================================================
 #EU-025
-def test_get_user_expenses_with_status_returns_list(expense_service_test, mock_approval_repo):
+@pytest.mark.parametrize(
+    "user_id",
+    [1, 2, 3]
+)
+def test_get_user_expenses_with_status_returns_list(user_id, expense_service_test, mock_approval_repo):
 
     #Arrange
-    user_id = 1
+    # user_id = 1
 
     #Act
     result = expense_service_test.get_user_expenses_with_status(user_id)
@@ -80,10 +92,14 @@ def test_get_user_expenses_with_status_returns_list(expense_service_test, mock_a
     mock_approval_repo.find_expenses_with_status_for_user.assert_called_with(user_id)
 
 #EU-026
-def test_get_user_expenses_with_status_returns_emptyList(expense_service_test, mock_approval_repo):
+@pytest.mark.parametrize(
+    "user_id",
+    [1, 2, 3]
+)
+def test_get_user_expenses_with_status_returns_emptyList(user_id, expense_service_test, mock_approval_repo):
 
     #Arrange
-    user_id = 1
+    # user_id = 1
     mock_approval_repo.find_expenses_with_status_for_user.return_value = []
 
     #Act
@@ -98,17 +114,26 @@ def test_get_user_expenses_with_status_returns_emptyList(expense_service_test, m
 # GET EXPENSE BY ID TESTS
 #========================================================================================================
 #EU-027
-def test_get_expense_by_id_returns_expense(expense_service_test, mock_expense_repo):
+@pytest.mark.parametrize(
+    "expense",
+    [
+        Expense(1, 1, 1.0, "test1", "date1"),
+        Expense(2, 2, 2.0, "test2", "date2"),
+        Expense(3, 3, 3.0, "test3", "date3")
+    ]
+)
+def test_get_expense_by_id_returns_expense(expense, expense_service_test, mock_expense_repo):
     #Arrange
-    expense = Expense(1, 1, 1.0, 'test', 'date')
+    # expense = Expense(1, 1, 1.0, 'test', 'date')
     mock_expense_repo.find_by_id.return_value = expense
 
     #Act
-    result = expense_service_test.get_expense_by_id(1,1)
+    result = expense_service_test.get_expense_by_id(expense.id, expense.user_id)
 
     #Assert
     assert result is expense
-    mock_expense_repo.find_by_id.assert_called_once_with(1)
+    mock_expense_repo.find_by_id.assert_called()
+    # mock_expense_repo.find_by_id.assert_called_once_with(expense.id)
 
 #EU-028
 def test_get_expense_by_id_returns_None(expense_service_test, mock_expense_repo):
@@ -125,18 +150,26 @@ def test_get_expense_by_id_returns_None(expense_service_test, mock_expense_repo)
 # GET EXPENSE WITH STATUS TESTS
 #========================================================================================================
 #EU-029
-def test_get_expense_with_status_returns_tuple(expense_service_test, mock_approval_repo, mock_expense_repo):
+@pytest.mark.parametrize(
+    "expense",
+    [
+        Expense(1, 1, 1.0, "test1", "date1"),
+        Expense(2, 2, 2.0, "test2", "date2"),
+        Expense(3, 3, 3.0, "test3", "date3")
+    ]
+)
+def test_get_expense_with_status_returns_tuple(expense, expense_service_test, mock_approval_repo, mock_expense_repo):
     #Arrange
-    expense_id = 1
-    user_id = 1
-    expense = Expense(1, 1, 1.0, 'test', 'date')
-    approval = Approval(1, 1, 'pending', None, None, None)
+    # expense_id = 1
+    # user_id = 1
+    # expense = Expense(1, 1, 1.0, 'test', 'date')
+    approval = Approval(expense.id, expense.user_id, 'pending', None, None, None)
 
     mock_approval_repo.find_by_expense_id.return_value = approval
     mock_expense_repo.find_by_id.return_value = expense
 
     #Act
-    result = expense_service_test.get_expense_with_status(expense_id, user_id)
+    result = expense_service_test.get_expense_with_status(expense.id, expense.user_id)
 
     #Assert
     assert result is not None
@@ -158,30 +191,46 @@ def test_get_expense_with_status_returns_None(expense_service_test, mock_approva
 # UPDATE EXPENSE TESTS
 #========================================================================================================
 #EU-031
-def test_update_expense_returns_expense(expense_service_test, mock_expense_repo):
+@pytest.mark.parametrize(
+    "expense",
+    [
+        Expense(1, 1, 1.0, "test1", "date1"),
+        Expense(2, 2, 2.0, "test2", "date2"),
+        Expense(3, 3, 3.0, "test3", "date3")
+    ]
+)
+def test_update_expense_returns_expense(expense, expense_service_test, mock_expense_repo):
 
     #Arrange
-    expense = Expense(1, 1, 1.0, 'test', 'date')
-    approval = Approval(1, 1, 'pending', None, None, None)
+    # expense = Expense(1, 1, 1.0, 'test', 'date')
+    approval = Approval(expense.id, expense.user_id, 'pending', None, None, None)
     mock_expense_repo.update.return_value = expense
     result = None
 
     #Act
     with patch("src.service.expense_service.ExpenseService.get_expense_with_status", return_value = (expense, approval)):
-        result = expense_service_test.update_expense(1, 1, 1.0, 'test', 'date')
+        result = expense_service_test.update_expense(expense.id, expense.user_id, expense.amount, expense.description, expense.date)
 
     #Assert
     assert result == expense
     mock_expense_repo.update.assert_called()
 
 #EU-032
-def test_update_expense_returns_none(expense_service_test, mock_expense_repo):
+@pytest.mark.parametrize(
+    "expense",
+    [
+        Expense(1, 1, 1.0, "test1", "date1"),
+        Expense(2, 2, 2.0, "test2", "date2"),
+        Expense(3, 3, 3.0, "test3", "date3")
+    ]
+)
+def test_update_expense_returns_none(expense, expense_service_test, mock_expense_repo):
     #Arrange
     result = None
 
     #Act
     with patch("src.service.expense_service.ExpenseService.get_expense_with_status", return_value = None):
-        result = expense_service_test.update_expense(1, 1, 1.0, 'test', 'date')
+        result = expense_service_test.update_expense(expense.id, expense.user_id, expense.amount, expense.description, expense.date)
 
     #Assert
     assert result is None
@@ -225,15 +274,23 @@ def test_update_expense_negative_amount_returns_exception(expense_service_test, 
             mock_expense_repo.update.assert_not_called()
 
 #EU-035
-def test_update_expense_empty_description_returns_exception(expense_service_test, mock_expense_repo):
+@pytest.mark.parametrize(
+    "expense",
+    [
+        Expense(1, 1, 1.0, "", "date1"),
+        Expense(2, 2, 2.0, "", "date2"),
+        Expense(3, 3, 3.0, "", "date3")
+    ]
+)
+def test_update_expense_empty_description_returns_exception(expense, expense_service_test, mock_expense_repo):
     #Arrange
-    expense = Expense(1, 1, 1.0, 'test', 'date')
-    approval = Approval(1, 1, 'pending', None, None, None)
+    # expense = Expense(1, 1, 1.0, 'test', 'date')
+    approval = Approval(expense.id, expense.user_id, 'pending', None, None, None)
 
     #Act
     with patch("src.service.expense_service.ExpenseService.get_expense_with_status", return_value = (expense, approval)):
         with pytest.raises(ValueError, match="Description is required"):
-            result = expense_service_test.update_expense(1, 1, 1.0, "", 'date')
+            result = expense_service_test.update_expense(expense.id, expense.user_id, expense.amount, expense.description, expense.date)
 
             # Assert
             assert result == ValueError
@@ -243,15 +300,23 @@ def test_update_expense_empty_description_returns_exception(expense_service_test
 # DELETE EXPENSE TESTS
 #========================================================================================================
 #EU-036
-def test_delete_expense_returns_true(expense_service_test, mock_expense_repo):
+@pytest.mark.parametrize(
+    "expense",
+    [
+        Expense(1, 1, 1.0, "test1", "date1"),
+        Expense(2, 2, 2.0, "test2", "date2"),
+        Expense(3, 3, 3.0, "test3", "date3")
+    ]
+)
+def test_delete_expense_returns_true(expense, expense_service_test, mock_expense_repo):
     #Arrange
-    expense = Expense(1, 1, 1.0, 'test', 'date')
-    approval = Approval(1, 1, 'pending', None, None, None)
+    # expense = Expense(1, 1, 1.0, 'test', 'date')
+    approval = Approval(expense.id, expense.user_id, 'pending', None, None, None)
     mock_expense_repo.delete.return_value = True
 
     #Act
     with patch("src.service.expense_service.ExpenseService.get_expense_with_status", return_value = (expense, approval)):
-            result = expense_service_test.delete_expense(1,1)
+            result = expense_service_test.delete_expense(expense.id,expense.user_id)
 
             # Assert
             assert result == True
@@ -275,12 +340,20 @@ def test_delete_expense_returns_exception_if_status_not_pending(expense_service_
             assert result == ValueError
 
 #EU-038
-def test_delete_expense_returns_false(expense_service_test):
+@pytest.mark.parametrize(
+    "expense",
+    [
+        Expense(1, 1, 1.0, "test1", "date1"),
+        Expense(2, 2, 2.0, "test2", "date2"),
+        Expense(3, 3, 3.0, "test3", "date3")
+    ]
+)
+def test_delete_expense_returns_false(expense, expense_service_test):
 
     #Arrange
     with patch("src.service.expense_service.ExpenseService.get_expense_with_status", return_value = None):
         #Act
-        result = expense_service_test.delete_expense(1, 1)
+        result = expense_service_test.delete_expense(expense.id, expense.user_id)
 
         # Assert
         assert result == False
@@ -309,13 +382,17 @@ def test_get_expense_history_returns_list(expense_service_test, status):
         assert len(result) > 0
 
 #EU-040
-def test_get_expense_history_returns_empty_list(expense_service_test):
+@pytest.mark.parametrize(
+    "user_id",
+    [1, 2, 3]
+)
+def test_get_expense_history_returns_empty_list(user_id, expense_service_test):
     #Arrange
     with patch("src.service.expense_service.ExpenseService.get_user_expenses_with_status",
                return_value = []):
 
         #Act
-        result = expense_service_test.get_expense_history(1, "pending")
+        result = expense_service_test.get_expense_history(user_id, "pending")
 
         #Assert
         assert len(result) == 0

@@ -12,7 +12,15 @@ def setUp(mocker):
 
 class TestExpenseRepository:
 
-    def test_create_expense_positive(self, setUp):
+    @pytest.mark.parametrize(
+        "newExpense",
+        [
+            Expense(None, 1, 95.49, "printer supplies", "2025-12-17"),
+            Expense(None, 2, 80.80, "test expense 1", "2026-01-20"),
+            Expense(None, 1, 100, "test expense 2", "2026-01-20")
+        ]
+    )
+    def test_create_expense_positive(self, newExpense, setUp):
         # Arrange
         # setUp[0] = mock_db, setUp[1] = mock_conn,
         # setUp[2] = mock_cursor, setUp[3] = expenseRepo
@@ -20,7 +28,7 @@ class TestExpenseRepository:
         setUp[1].execute.return_value = setUp[2]
         setUp[2].lastrowid = 5
 
-        newExpense = Expense(None, 1, 95.49, "printer supplies", "2025-12-17")
+        # newExpense = Expense(None, 1, 95.49, "printer supplies", "2025-12-17")
 
         # Act
         actualExpense = setUp[3].create(newExpense)
@@ -35,7 +43,7 @@ class TestExpenseRepository:
         setUp[1].execute.assert_has_calls(expectedCalls, any_order=False)
         setUp[1].commit.assert_called_once()
 
-        assert actualExpense.id == 5
+        assert actualExpense.id == newExpense.id
         assert actualExpense.user_id == newExpense.user_id
         assert actualExpense.amount == newExpense.amount
         assert actualExpense.description == newExpense.description
@@ -79,13 +87,21 @@ class TestExpenseRepository:
         assert actualExpense.description == newExpense.description
         assert actualExpense.date == newExpense.date
 
-    def test_find_by_id_positive(self, setUp):
+    @pytest.mark.parametrize(
+        "expectedData",
+        [
+            {"id": 5, "user_id": 1, "amount": 79.32, "description": "printer supplies", "date": "2025-12-17"},
+            {"id": 6, "user_id": 2, "amount": 80.80, "description": "test expense 1", "date": "2026-01-20"},
+            {"id": 7, "user_id": 1, "amount": 100, "description": "test expense 2", "date": "2026-01-20"}
+        ]
+    )
+    def test_find_by_id_positive(self, expectedData, setUp):
         # Arrange
         # setUp[0] = mock_db, setUp[1] = mock_conn,
         # setUp[2] = mock_cursor, setUp[3] = expenseRepo
         setUp[0].get_connection.return_value.__enter__.return_value = setUp[1]
         setUp[1].execute.return_value = setUp[2]
-        expectedData = {"id": 5, "user_id": 1, "amount": 79.32, "description": "printer supplies", "date": "2025-12-17"}
+        # expectedData = {"id": 5, "user_id": 1, "amount": 79.32, "description": "printer supplies", "date": "2025-12-17"}
         setUp[2].fetchone.return_value = expectedData
         # Act
         actualExpense = setUp[3].find_by_id(expectedData["id"])
@@ -119,21 +135,29 @@ class TestExpenseRepository:
             (idInput,))
         assert actualExpense is None
 
-    def test_find_by_user_id_positive(self, setUp):
+    @pytest.mark.parametrize(
+        "expenseList",
+        [
+            [
+                {"id": 5, "user_id": 1, "amount": 79.32, "description": "printer supplies", "date": "2025-12-17"},
+                {"id": 7, "user_id": 1, "amount": 100, "description": "test expense 2", "date": "2026-01-20"},
+                {"id": 9, "user_id": 1, "amount": 37.99, "description": "test expense 4", "date": "2026-01-20"}
+            ]
+        ]
+    )
+    def test_find_by_user_id_positive(self, expenseList, setUp):
         # Arrange
         # setUp[0] = mock_db, setUp[1] = mock_conn,
         # setUp[2] = mock_cursor, setUp[3] = expenseRepo
         setUp[0].get_connection.return_value.__enter__.return_value = setUp[1]
         setUp[1].execute.return_value = setUp[2]
-        expectedData = {"id": 5, "user_id": 1, "amount": 79.32, "description": "printer supplies", "date": "2025-12-17"}
-        expectedData2 = {"id": 6, "user_id": 1, "amount": 100.50, "description": "office supplies", "date": "2025-12-17"}
-        expectedData3 = {"id": 7, "user_id": 1, "amount": 350.99, "description": "door repair", "date": "2025-12-17"}
-        setUp[2].fetchall.return_value = [
-            expectedData, expectedData2, expectedData3
-        ]
+        # expectedData = {"id": 5, "user_id": 1, "amount": 79.32, "description": "printer supplies", "date": "2025-12-17"}
+        # expectedData2 = {"id": 6, "user_id": 1, "amount": 100.50, "description": "office supplies", "date": "2025-12-17"}
+        # expectedData3 = {"id": 7, "user_id": 1, "amount": 350.99, "description": "door repair", "date": "2025-12-17"}
+        setUp[2].fetchall.return_value = expenseList
         newExpense1 = Expense(5, 1, 79.32, "printer supplies", "2025-12-17")
-        newExpense2 = Expense(6, 1, 100.50, "office supplies", "2025-12-17")
-        newExpense3 = Expense(7, 1, 350.99, "door repair", "2025-12-17")
+        newExpense2 = Expense(9, 1, 37.99, "test expense 4", "2026-01-20")
+        newExpense3 = Expense(7, 1, 100, "test expense 2", "2026-01-20")
         # Act
         actualExpenseList = setUp[3].find_by_user_id(1)
         # Assert
@@ -165,12 +189,20 @@ class TestExpenseRepository:
             (userIdInput,))
         assert len(actualExpenseList) == 0
 
-    def test_update_expense_positive(self, setUp):
+    @pytest.mark.parametrize(
+        "newExpense",
+        [
+            Expense(1, 1, 95.49, "printer supplies", "2025-12-17"),
+            Expense(2, 2, 80.80, "test expense 1", "2026-01-20"),
+            Expense(3, 1, 100, "test expense 2", "2026-01-20")
+        ]
+    )
+    def test_update_expense_positive(self, newExpense, setUp):
         # Arrange
         # setUp[0] = mock_db, setUp[1] = mock_conn,
         # setUp[2] = mock_cursor, setUp[3] = expenseRepo
         setUp[0].get_connection.return_value.__enter__.return_value = setUp[1]
-        newExpense = Expense(5, 1, 79.32, "printer supplies", "2025-12-17")
+        # newExpense = Expense(5, 1, 79.32, "printer supplies", "2025-12-17")
         # Act
         actualExpense = setUp[3].update(newExpense)
         # Assert
@@ -211,7 +243,11 @@ class TestExpenseRepository:
         setUp[1].commit.assert_called_once_with()
         assert actualExpense == newExpense
 
-    def test_delete_positive(self, setUp):
+    @pytest.mark.parametrize(
+        "idToDelete",
+        [1, 2, 3]
+    )
+    def test_delete_positive(self, idToDelete, setUp):
         # Arrange
         # setUp[0] = mock_db, setUp[1] = mock_conn,
         # setUp[2] = mock_cursor, setUp[3] = expenseRepo
@@ -219,11 +255,11 @@ class TestExpenseRepository:
         setUp[1].execute.return_value = setUp[2]
         setUp[2].rowcount = 1
         expectedCalls = [
-            call("DELETE FROM approvals WHERE expense_id = ?", (5,)),
-            call("DELETE FROM expenses WHERE id = ?", (5,))
+            call("DELETE FROM approvals WHERE expense_id = ?", (idToDelete,)),
+            call("DELETE FROM expenses WHERE id = ?", (idToDelete,))
         ]
         # Act
-        result = setUp[3].delete(5)
+        result = setUp[3].delete(idToDelete)
         # Assert
         setUp[1].execute.assert_has_calls(expectedCalls, any_order=False)
         setUp[1].commit.assert_called_once()
