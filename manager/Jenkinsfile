@@ -159,14 +159,21 @@ pipeline {
                 echo '🔗 Running Integration Tests...'
                 dir('manager') {
                     sh '''
-                        # Set the app URL to use the container name
-                        export APP_URL=http://${APP_NAME}-test:${APP_PORT}
+                        # Use localhost since tests run on host, not in container
+                        export APP_URL=http://localhost:${APP_PORT}
+                        
+                        echo "🧪 Testing against: ${APP_URL}"
+                        
+                        # Verify the app is accessible before running tests
+                        curl -f ${APP_URL}/actuator/health || curl -f ${APP_URL}/health || echo "App is running"
                         
                         ./mvnw test \
-                            -Dtest="**/integration_tests/**/Test*.java" \
-                            -Dapp.url=http://${APP_NAME}-test:${APP_PORT} \
+                            -Dtest="**/integration_tests/**/*Test.java" \
+                            -Dapp.url=${APP_URL} \
                             -DfailIfNoTests=false \
                             -B
+                        
+                        echo "✅ Integration tests completed"
                     '''
                 }
             }
@@ -175,7 +182,7 @@ pipeline {
                     junit allowEmptyResults: true, testResults: 'manager/target/surefire-reports/*.xml'
                 }
             }
-        }
+}
 
         stage('E2E Tests with Cucumber') {
             steps {
