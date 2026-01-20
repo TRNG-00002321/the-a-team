@@ -24,7 +24,7 @@ FROM eclipse-temurin:17-jre
 WORKDIR /app
 
 # Install wget for healthcheck
-RUN apk add --no-cache wget
+#RUN apk add --no-cache wget
 
 # Create non-root user for security
 RUN addgroup -g 1001 appgroup && \
