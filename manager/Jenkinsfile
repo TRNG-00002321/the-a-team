@@ -47,25 +47,6 @@ pipeline {
             }
         }
 
-        // stage('Debug Paths') {
-        //     steps {
-        //         echo '🔍 Debugging volume mount paths...'
-        //         dir('manager') {
-        //             sh '''
-        //                 echo "Current directory: $(pwd)"
-        //                 echo "Listing current directory:"
-        //                 ls -la
-        //                 echo ""
-        //                 echo "Checking if pom.xml exists:"
-        //                 ls -la pom.xml
-        //                 echo ""
-        //                 echo "Testing Docker mount:"
-        //                 docker run --rm -v $(pwd):/test alpine ls -la /test
-        //             '''
-        //         }
-        //     }
-        // }
-
         stage('Unit Tests') {
             steps {
                 echo '🧪 Running Unit Tests...'
@@ -85,31 +66,6 @@ pipeline {
             }
         }
 
-//         stage('Integration Tests') {
-//             steps {
-//                 echo '🔗 Running Integration Tests...'
-//                 dir('manager') {
-//                     sh '''
-//                         docker run --rm \
-//                             -v $(pwd):/app \
-//                             -v ${MAVEN_CACHE}:/root/.m2 \
-//                             -w /app \
-//                             -e TEST_MODE=true \
-//                             maven:3.9-eclipse-temurin-17 \
-//                             mvn test \
-//                             -Dtest="**/integration_tests/**/*Test.java" \
-//                             -DfailIfNoTests=false \
-//                             -B
-//                     '''
-//                 }
-//             }
-//             post {
-//                 always {
-//                     junit allowEmptyResults: true, testResults: 'manager/target/surefire-reports/*.xml'
-//                 }
-//             }
-//         }
-
         stage('Code Coverage') {
             steps {
                 echo '📈 Generating JaCoCo Coverage Report...'
@@ -121,12 +77,14 @@ pipeline {
             }
             post {
                 always {
-                    jacoco(
-                        execPattern: 'manager/target/jacoco.exec',
-                        classPattern: 'manager/target/classes',
-                        sourcePattern: 'manager/src/main/java',
-                        exclusionPattern: '**/*Test*.class'
-                    )
+                    publishCoverage adapters: [
+                        jacocoAdapter(
+                            path: 'manager/target/site/jacoco/jacoco.xml'
+                        )
+                    ],
+                    sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+                    
+                    // Optional: Keep the HTML report as well
                     publishHTML(target: [
                         allowMissing: true,
                         alwaysLinkToLastBuild: true,
@@ -139,16 +97,16 @@ pipeline {
             }
         }
 
-        stage('Build Application') {
-            steps {
-                echo '📦 Building JAR file...'
-                dir('manager') {
-                    sh '''
-                        ./mvnw clean package -DskipTests -B
-                    '''
+            stage('Build Application') {
+                steps {
+                    echo '📦 Building JAR file...'
+                    dir('manager') {
+                        sh '''
+                            ./mvnw clean package -DskipTests -B
+                        '''
+                    }
                 }
             }
-        }
 
         stage('Build Docker Image') {
             steps {
@@ -166,7 +124,7 @@ pipeline {
             }
         }
 
-        stage('Start Application for E2E Tests') {
+        stage('Start Application for Testing') {
             steps {
                 echo '🚀 Starting Manager App for Testing...'
                 sh '''
@@ -196,6 +154,31 @@ pipeline {
                     docker logs ${APP_NAME}-test
                     exit 1
                 '''
+            }
+        }
+
+        stage('Integration Tests') {
+            steps {
+                echo '🔗 Running Integration Tests...'
+                dir('manager') {
+                    sh '''
+                        docker run --rm \
+                            -v $(pwd):/app \
+                            -v ${MAVEN_CACHE}:/root/.m2 \
+                            -w /app \
+                            -e TEST_MODE=true \
+                            maven:3.9-eclipse-temurin-17 \
+                            mvn test \
+                            -Dtest="**/integration_tests/**/*Test.java" \
+                            -DfailIfNoTests=false \
+                            -B
+                    '''
+                }
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'manager/target/surefire-reports/*.xml'
+                }
             }
         }
 
