@@ -9,6 +9,8 @@ import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import io.restassured.specification.ResponseSpecification;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.lessThan;
@@ -49,12 +51,13 @@ public class TestPostApproveExpense {
     }
 
     @DisplayName("Test attempted approval without authentication first")
-    @Test
-    public void testApproveNoAuth(){
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 9999})
+    public void testApproveNoAuth(int id){
         Response response = given()
                 .spec(requestSpec)
         .when()
-                .post("/api/expenses/1234567/approve")
+                .post("/api/expenses/"+id+"/approve")
         .then()
                 .statusCode(401)
                 .extract().response();
@@ -65,8 +68,9 @@ public class TestPostApproveExpense {
     }
 
     @DisplayName("Test while logged in, attempt approval of expense that does not exist")
-    @Test
-    public void testApproveNoExpense(){
+    @ParameterizedTest
+    @ValueSource(ints = {-1, 80, 9999})
+    public void testApproveNoExpense(int id){
         String credentials = """
             {
                 "username":"manager1",
@@ -90,7 +94,7 @@ public class TestPostApproveExpense {
                 .spec(requestSpec)
                 .cookie("jwt", jwtCookie)
         .when()
-                .post("/api/expenses/1234567/approve")
+                .post("/api/expenses/"+id+"/approve")
         .then()
                 .statusCode(404)
                 .extract().response();
@@ -102,9 +106,10 @@ public class TestPostApproveExpense {
 
     //Expense must be seeded in the database with the corresponding id for test to pass
     @DisplayName("Test approve expense positive test case, expense id exists and expense is pending")
-    @Test
-    public void testApprovalPositive(){
-        int expenseId = 1;
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 3,4})
+    public void testApprovalPositive(int expenseId){
+
         String credentials = """
             {
                 "username":"manager1",
