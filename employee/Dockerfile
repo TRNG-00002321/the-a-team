@@ -12,7 +12,7 @@ COPY . .
 
 
 # -------------------------
-# Test image (E2E / Behave)
+# Test image
 # -------------------------
 FROM base AS test
 
@@ -39,7 +39,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY tests/ ./tests
 COPY behave.ini .
 
+EXPOSE 5000
+
 RUN mkdir -p logs test-results allure-results
+
+CMD python main.py & \
+    wait-for-it localhost:5000 -t 30 && \
+    behave tests/end_to_end_test/features
 
 
 # -------------------------
