@@ -167,19 +167,6 @@ pipeline {
             }
             post {
                 always {
-                    dir('manager') {
-                        sh '''
-                            # Stop the application
-                            if [ -f app.pid ]; then
-                                APP_PID=$(cat app.pid)
-                                echo "🛑 Stopping application (PID: $APP_PID)"
-                                kill $APP_PID || true
-                                sleep 2
-                                kill -9 $APP_PID 2>/dev/null || true
-                                rm -f app.pid
-                            fi
-                        '''
-                    }
                     junit allowEmptyResults: true, testResults: 'manager/target/surefire-reports/*.xml'
                 }
             }
@@ -188,48 +175,42 @@ pipeline {
         stage('E2E Tests with Cucumber') {
             steps {
                 echo '🌐 Running E2E Tests with Cucumber + Selenium...'
+                // Install Chrome outside of manager directory if not already installed
+                sh '''
+                    if ! command -v google-chrome &> /dev/null; then
+                        echo "Chrome not found, installing..."
+                        cd /tmp
+                        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+                        sudo apt install -y ./google-chrome-stable_current_amd64.deb
+                        rm google-chrome-stable_current_amd64.deb
+                    else
+                        echo "Chrome already installed, skipping installation"
+                    fi
+                '''
+                // Run tests in manager directory
                 dir('manager') {
                     sh '''
-                        docker run -d \
-                            --name selenium-chrome \
-                            --network host \
-                            --shm-size=2g \
-                            selenium/standalone-chrome:latest
-
-                        echo "Waiting for Selenium Grid..."
-                        for i in {1..30}; do
-                            if curl -f http://localhost:4444/wd/hub/status 2>/dev/null; then
-                                echo "✅ Selenium Grid ready!"
-                                break
-                            fi
-                            sleep 2
-                        done
-
-                        docker run --rm \
-                            --network host \
-                            -v $(pwd):/app \
-                            -v ${MAVEN_CACHE}:/root/.m2 \
-                            -w /app \
-                            -e APP_URL=http://localhost:${APP_PORT} \
-                            -e BROWSER=chrome \
-                            -e SELENIUM_REMOTE_URL=http://localhost:4444/wd/hub \
-                            maven:3.9-eclipse-temurin-17 \
-                            mvn test \
-                                -Dtest="com.revature.end_to_end_tests.runners.TestRunner" \
-                                -DfailIfNoTests=false \
-                                -B || true
-
-                        docker stop selenium-chrome || true
-                        docker rm selenium-chrome || true
+                        mvn test \
+                            -Dtest="com.revature.end_to_end_tests.runners.TestRunner" \
+                            -DfailIfNoTests=false \
+                            -B || true
                     '''
-                }
-            }
-            post {
-                always {
-                    sh '''
-                        docker stop selenium-chrome 2>/dev/null || true
-                        docker rm selenium-chrome 2>/dev/null || true
-                    '''
+                    }
+                    post {
+                        always {
+                            dir('manager') {
+                                sh '''
+                                    # Stop the application
+                                    if [ -f app.pid ]; then
+                                        APP_PID=$(cat app.pid)
+                                        echo "🛑 Stopping application (PID: $APP_PID)"
+                                        kill $APP_PID || true
+                                        sleep 2
+                                        kill -9 $APP_PID 2>/dev/null || true
+                                        rm -f app.pid
+                                    fi
+                                '''
+                    }
                     junit allowEmptyResults: true, testResults: 'manager/target/surefire-reports/*.xml, manager/target/cucumber-reports/cucumber.xml'
                     publishHTML(target: [
                         allowMissing: true,
