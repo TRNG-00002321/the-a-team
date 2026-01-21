@@ -24,18 +24,14 @@ pipeline {
 
         stage('E2E Tests') {
             steps {
-                sh 'docker-compose down --remove-orphans || true'
-                sh 'docker-compose up -d --force-recreate selenium employee'
-                
-                // Wait for services to be ready
-                sh 'sleep 10'
-                
-                // Debug: Check if environment variables are set
-                sh 'docker-compose exec -T employee env | grep SELENIUM || echo "SELENIUM_REMOTE_URL not found!"'
-                
-                // Run the tests
-                sh 'docker-compose exec -T employee behave tests/end_to_end_test/features'
-                sh 'docker-compose down --remove-orphans'
+                sh '''
+                docker run --rm \
+                  -e TEST_MODE=true \
+                  -e BROWSER=chrome \
+                  -e HEADLESS=true \
+                  -e TEST_DATABASE_PATH=/app/tests/test_db/test_expense_manager.db \
+                  employee-app behave tests/end_to_end_test/features
+                '''
             }
         }
 

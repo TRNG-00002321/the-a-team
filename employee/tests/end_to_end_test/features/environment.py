@@ -3,15 +3,6 @@ import sys
 from src.repository import DatabaseConnection
 from tests.end_to_end_test.drivers.browser_manager import create_driver
 
-# CRITICAL DEBUG - Add this RIGHT after imports
-sys.stderr.write("\n" + "="*60 + "\n")
-sys.stderr.write("ENVIRONMENT.PY LOADED\n")
-sys.stderr.write(f"create_driver function: {create_driver}\n")
-sys.stderr.write(f"create_driver module: {create_driver.__module__}\n")
-sys.stderr.write("="*60 + "\n\n")
-sys.stderr.flush()
-
-
 SEED_SQL_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "../../sql/seed.sql")
 )
