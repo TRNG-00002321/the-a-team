@@ -25,12 +25,16 @@ pipeline {
             steps {
                 sh '''
                   docker run --rm \
-                  -e TEST_MODE=true \
-                  -e BROWSER=chrome \
-                  -e HEADLESS=true \
-                  -e TEST_DATABASE_PATH=/app/tests/test_db/test_expense_manager.db \
-                  employee-test \
-                  behave tests/end_to_end_test/features
+                    -e TEST_MODE=true \
+                    -e BROWSER=chrome \
+                    -e HEADLESS=true \
+                    -e TEST_DATABASE_PATH=/app/tests/test_db/test_expense_manager.db \
+                    employee-test \
+                    sh -c "
+                      python main.py & 
+                      sleep 5 &&
+                      behave tests/end_to_end_test/features
+                    "
                 '''
             }
         }

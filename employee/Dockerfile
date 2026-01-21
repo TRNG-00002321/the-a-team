@@ -43,10 +43,6 @@ EXPOSE 5000
 
 RUN mkdir -p logs test-results allure-results
 
-CMD python main.py & \
-    wait-for-it localhost:5000 -t 30 && \
-    behave tests/end_to_end_test/features
-
 
 # -------------------------
 # Production image
