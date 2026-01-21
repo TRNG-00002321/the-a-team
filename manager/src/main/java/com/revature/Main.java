@@ -59,7 +59,7 @@ public class Main {
 //                staticFiles.location = Location.CLASSPATH;
 //                staticFiles.precompress = false;
 //            });
-
+            
             // Enable request logging
             config.bundledPlugins.enableDevLogging();
         });
@@ -127,7 +127,7 @@ public class Main {
                 ctx.status(404).result("auth.js not found");
             }
         });
-
+        
         // Authentication status endpoint (no auth required)
         app.get("/api/auth/status", ctx -> {
             String jwtToken = ctx.cookie("jwt");

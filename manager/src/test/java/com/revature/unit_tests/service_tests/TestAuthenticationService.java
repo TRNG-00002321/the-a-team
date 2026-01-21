@@ -19,149 +19,130 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class TestAuthenticationService {
-  @Mock
-  private UserRepository userRepository;
 
-  @InjectMocks
-  private AuthenticationService authenticationService;
+    @Mock
+    private UserRepository userRepository;
 
-  @Test
-  public void testValidateAuthenticationValidHeaderReturnsUser() {
-    User user = new User(1, "username", "password", "Employee");
+    @InjectMocks
+    private AuthenticationService authenticationService;
 
-    when(userRepository.findById(1)).thenReturn(Optional.of(user));
+    @Test
+    public void testValidateAuthenticationValidHeaderReturnsUser() {
+        User user = new User(1, "username", "password", "Employee");
+        when(userRepository.findById(1)).thenReturn(Optional.of(user));
 
-    Optional<User> result = authenticationService.validateAuthentication("Bearer 1");
+        Optional<User> result = authenticationService.validateAuthentication("Bearer 1");
 
-    assertTrue(result.isPresent());
-    assertEquals(1, result.get().getId());
+        assertTrue(result.isPresent());
+        assertEquals(1, result.get().getId());
+        verify(userRepository).findById(1);
+    }
 
-    verify(userRepository).findById(1);
-  }
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", "Bearer abc", "Invalid 1", "Bearer"})
+    public void testValidateAuthenticationBadHeaderReturnsEmptyOptional(String header) {
+        Optional<User> result = authenticationService.validateAuthentication(header);
 
-  @ParameterizedTest
-  @NullSource
-  @ValueSource(
-    strings = {"", "Bearer abc", "Invalid 1", "Bearer"}
-  )
-  public void testValidateAuthenticationBadHeaderReturnsEmptyOptional(String header) {
-    Optional<User> result = authenticationService.validateAuthentication(header);
-    assertTrue(result.isEmpty());
-    verifyNoInteractions(userRepository);
-  }
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(userRepository);
+    }
 
-  @Test
-  public void isManagerManagerTrue() {
-    User manager = new User(1, "manager", "password", "Manager");
-    assertTrue(authenticationService.isManager(manager));
-  }
+    @ParameterizedTest
+    @ValueSource(strings = {"Manager", "Employee"})
+    public void testIsManagerChecksRole(String role) {
+        User user = new User(1, "user", "password", role);
 
-  @Test
-  public void isManagerEmployeeFalse() {
-    User employee = new User(1, "employee", "password", "Employee");
-    assertFalse(authenticationService.isManager(employee));
-  }
+        boolean result = authenticationService.isManager(user);
 
-  @Test
-  public void testValidateMangerAuthenticationLegacyValidHeaderReturnsUser() {
-    User user = new User(1, "username", "password", "Manager");
+        assertEquals(role.equals("Manager"), result);
+    }
 
-    when(userRepository.findById(1)).thenReturn(Optional.of(user));
+    @Test
+    public void testValidateManagerAuthenticationLegacyValidHeaderReturnsUser() {
+        User user = new User(1, "username", "password", "Manager");
+        when(userRepository.findById(1)).thenReturn(Optional.of(user));
 
-    Optional<User> result = authenticationService.validateManagerAuthenticationLegacy("Bearer 1");
+        Optional<User> result = authenticationService.validateManagerAuthenticationLegacy("Bearer 1");
 
-    assertTrue(result.isPresent());
-    assertEquals(1, result.get().getId());
+        assertTrue(result.isPresent());
+        assertEquals(1, result.get().getId());
+        verify(userRepository).findById(1);
+    }
 
-    verify(userRepository).findById(1);
-  }
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", "Bearer abc", "Invalid 1", "Bearer"})
+    public void testValidateManagerAuthenticationLegacyInvalidHeaderReturnsEmpty(String header) {
+        Optional<User> result = authenticationService.validateManagerAuthenticationLegacy(header);
 
-  @ParameterizedTest
-  @NullSource
-  @ValueSource(
-    strings = {"", "Bearer abc", "Invalid 1", "Bearer"}
-  )
-  public void testValidateMangerAuthenticationLegacyInvalidHeaderReturnsEmpty(String header) {
-    Optional<User> result = authenticationService.validateManagerAuthenticationLegacy(header);
-    assertTrue(result.isEmpty());
-    verifyNoInteractions(userRepository);
-  }
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(userRepository);
+    }
 
-  @Test
-  public void testAuthenticateUserValidUserReturnsUser() {
-    User manager = new User(1, "manager", "password", "Manager");
+    @Test
+    public void testAuthenticateUserValidCredentialsReturnsUser() {
+        User user = new User(1, "manager", "password", "Manager");
+        when(userRepository.findByUsername("manager")).thenReturn(Optional.of(user));
 
-    when(userRepository.findByUsername("manager")).thenReturn(Optional.of(manager));
+        Optional<User> result = authenticationService.authenticateUser("manager", "password");
 
-    Optional<User> result = authenticationService.authenticateUser("manager", "password");
+        assertTrue(result.isPresent());
+        assertSame(user, result.get());
+        verify(userRepository).findByUsername("manager");
+    }
 
-    assertTrue(result.isPresent());
-    assertSame(manager, result.get());
-    verify(userRepository).findByUsername("manager");
-  }
+    @ParameterizedTest
+    @ValueSource(strings = {"", "PASSWORD", " password "})
+    public void testAuthenticateUserInvalidPasswordReturnsEmpty(String password) {
+        User user = new User(1, "manager", "password", "Manager");
+        when(userRepository.findByUsername("manager")).thenReturn(Optional.of(user));
 
-  @ParameterizedTest
-  @ValueSource(
-    strings = {"", "PASSWORD", " password "}
-  )
-  public void testAuthenticateUserInvalidPasswordReturnsEmpty(String password) {
-    User user = new User(1, "manager", "password", "Manager");
+        Optional<User> result = authenticationService.authenticateUser("manager", password);
 
-    when(userRepository.findByUsername("manager")).thenReturn(Optional.of(user));
+        assertTrue(result.isEmpty());
+    }
 
-    Optional<User> result = authenticationService.authenticateUser("manager", password);
+    @ParameterizedTest
+    @ValueSource(strings = {"", "manager"})
+    public void testAuthenticateUserUsernameNotFoundReturnsEmpty(String username) {
+        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
 
-    assertTrue(result.isEmpty());
-  }
+        Optional<User> result = authenticationService.authenticateUser(username, "password");
 
-  @ParameterizedTest
-  @ValueSource(
-    strings = {"", "manager"}
-  )
-  public void testAuthenticateUserUsernameNotFoundReturnsEmpty(String username) {
-    when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+        assertTrue(result.isEmpty());
+    }
 
-    Optional<User> result = authenticationService.authenticateUser(username, "password");
+    @Test
+    public void testAuthenticateManagerValidCredentialsReturnsUser() {
+        User manager = new User(1, "manager", "password", "Manager");
+        when(userRepository.findByUsername("manager")).thenReturn(Optional.of(manager));
 
-    assertTrue(result.isEmpty());
-  }
+        Optional<User> result = authenticationService.authenticateManager("manager", "password");
 
-  @Test
-  public void testAuthenticateManagerValidUserReturnsUser() {
-    User manager = new User(1, "manager", "password", "Manager");
+        assertTrue(result.isPresent());
+        assertSame(manager, result.get());
+        verify(userRepository).findByUsername("manager");
+    }
 
-    when(userRepository.findByUsername("manager")).thenReturn(Optional.of(manager));
+    @ParameterizedTest
+    @ValueSource(strings = {"", "PASSWORD", " password "})
+    public void testAuthenticateManagerInvalidPasswordReturnsEmpty(String password) {
+        User user = new User(1, "manager", "password", "Manager");
+        when(userRepository.findByUsername("manager")).thenReturn(Optional.of(user));
 
-    Optional<User> result = authenticationService.authenticateManager("manager", "password");
+        Optional<User> result = authenticationService.authenticateManager("manager", password);
 
-    assertTrue(result.isPresent());
-    assertSame(manager, result.get());
-    verify(userRepository).findByUsername("manager");
-  }
+        assertTrue(result.isEmpty());
+    }
 
-  @ParameterizedTest
-  @ValueSource(
-    strings = {"", "PASSWORD", " password "}
-  )
-  public void testAuthenticateManagerInvalidPasswordReturnsEmpty(String password) {
-    User user = new User(1, "manager", "password", "Manager");
+    @ParameterizedTest
+    @ValueSource(strings = {"", "manager"})
+    public void testAuthenticateManagerUsernameNotFoundReturnsEmpty(String username) {
+        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
 
-    when(userRepository.findByUsername("manager")).thenReturn(Optional.of(user));
+        Optional<User> result = authenticationService.authenticateManager(username, "password");
 
-    Optional<User> result = authenticationService.authenticateManager("manager", password);
-
-    assertTrue(result.isEmpty());
-  }
-
-  @ParameterizedTest
-  @ValueSource(
-    strings = {"", "manager"}
-  )
-  public void testAuthenticateManagerUsernameNotFoundReturnsEmpty(String username) {
-    when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
-
-    Optional<User> result = authenticationService.authenticateManager(username, "password");
-
-    assertTrue(result.isEmpty());
-  }
+        assertTrue(result.isEmpty());
+    }
 }
