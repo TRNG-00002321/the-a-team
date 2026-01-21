@@ -59,45 +59,47 @@ class TestSpecificExpenseAPI:
     def credentials(self):
         return {"username": "employee1", "password": "password123", "role": "employee"}
 
-    @pytest.fixture
-    def sample_expense(self):
-        return {
-            "amount": 50.0,
-            "date": "2025-01-05",
-            "description" : "Client lunch",
-            "status": "pending"
-        }
 
 
-    def test_get_specific_expense_by_id_positive(self, credentials, sample_expense, test_client, setup_database):
+    @pytest.mark.parametrize("expense_id, amount, date,description,status", [
+        (1,50.0, "2025-01-05","Client lunch","pending"),
+        (2, 200.00, '2025-01-06', 'Hotel stay', 'approved'),
+        (3, 30.00,  '2025-01-07','Parking fee', 'denied'),
+        (6, 200.00, '2025-01-07','Travel Expenses', 'pending')
+    ])
+    def test_get_specific_expense_by_id_positive(self, credentials, expense_id, amount, date,description,status, test_client, setup_database):
         # Login
         login_url = "/api/auth/login"
         login_response = test_client.post(login_url, json = credentials)
         assert login_response.status_code == 200
 
-        expense_id = 1
+
 
         # Get expense by id
         expense_response = test_client.get(f"/api/expenses/{expense_id}")
         assert expense_response.status_code == 200
         expense_data = expense_response.get_json()["expense"]
 
-        assert expense_data["amount"] == sample_expense["amount"]
+        assert expense_data["amount"] == amount
         assert expense_data["id"] == expense_id
+        assert expense_data["date"] == date
+        assert expense_data["description"] == description
+        assert expense_data["status"] == status
 
-    def test_get_specific_expense_by_id_negative(self, credentials, test_client, setup_database):
+    @pytest.mark.parametrize("expense_id", [-1,999,100000])
+    def test_get_specific_expense_by_id_negative(self, credentials, test_client, setup_database, expense_id):
         # Login
         login_url = "/api/auth/login"
         login_response = test_client.post(login_url, json=credentials)
         assert login_response.status_code == 200
 
-        expense_id = 999
 
         # Get expense by id - not found
         expense_response = test_client.get(f"/api/expenses/{expense_id}")
         assert expense_response.status_code == 404
 
-    def test_get_expense_user_not_logged_in(self, test_client):
+    @pytest.mark.parametrize("expense_id", [-1, 999, 100000])
+    def test_get_expense_user_not_logged_in(self, test_client, expense_id):
         # get expense without login
         expense_id = 1
         response = test_client.get(f"/api/expenses/{expense_id}")
