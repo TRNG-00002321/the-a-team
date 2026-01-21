@@ -69,10 +69,11 @@ def step_impl(context):
 
     assert active_element == username_input
 
-
-@given(u'the employee enters username "{username}"')
-def step_impl(context, username):
-    context.login_page.enter_username(username)
+# Commenting this out because it is almost identical to the When step above^
+# Restructured the Empty Password Input scenario to mark this step as a When, not a Given - PJ
+# @given(u'the employee enters username "{username}"')
+# def step_impl(context, username):
+#     context.login_page.enter_username(username)
 
 
 @when(u'the employee does not input any value for the password')

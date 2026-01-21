@@ -1,6 +1,7 @@
 import pytest
 from flask import Flask
 from src.api import auth_controller
+from src.repository import User
 
 
 class Test_Auth_Controller:
@@ -45,29 +46,45 @@ class Test_Auth_Controller:
         assert response.get_json()["error"] == "Invalid credentials"
 
     # EU-056
-    def test_login_positive(self, setup):
-        user = type("User", (), {"id": 1, "username": "testuser", "role": "admin"})()
+    @pytest.mark.parametrize(
+        "user",
+        [
+            User(1, "testuser", "psw1", "Employee"),
+            User(2, "testuser1", "psw2", "Employee"),
+            User(3, "testuser2", "psw3", "Employee")
+        ]
+    )
+    def test_login_positive(self, user, setup):
+        # user = type("User", (), {"id": 1, "username": "testuser", "role": "admin"})()
 
         setup[0].auth_service.authenticate_user.return_value = user
         setup[0].auth_service.generate_jwt_token.return_value = "fake-jwt-token"
 
-        response = setup[1].post("/api/auth/login", json={"username": "testuser", "password": "password"})
+        response = setup[1].post("/api/auth/login", json={"username": user.username, "password": user.password})
 
         assert response.status_code == 200
 
         data = response.get_json()
         assert data["message"] == "Login successful"
-        assert data["user"]["username"] == "testuser"
+        assert data["user"]["username"] == user.username
 
         set_cookie_header = response.headers.get("Set-Cookie")
         assert "jwt_token=fake-jwt-token" in set_cookie_header
         assert "HttpOnly" in set_cookie_header
 
     # EU-057
-    def test_login_exception(self, setup):
+    @pytest.mark.parametrize(
+        "credentials",
+        [
+            {"username": "testuser1", "password": "testpassword1"},
+            {"username": "testuser2", "password": "testpassword2"},
+            {"username": "testuser3", "password": "testpassword3"}
+        ]
+    )
+    def test_login_exception(self, credentials, setup):
         setup[0].auth_service.authenticate_user.side_effect = Exception("Broken")
 
-        response = setup[1].post("/api/auth/login", json={"username": "user", "password": "pass"})
+        response = setup[1].post("/api/auth/login", json={"username": credentials["username"], "password": credentials["password"]})
 
         assert response.status_code == 500
         assert response.get_json()["error"] == "Login failed"
@@ -90,8 +107,16 @@ class Test_Auth_Controller:
         assert response.get_json() == {"authenticated": False}
 
     # EU-060
-    def test_status_positive(self, setup):
-        user = type("User", (), {"id": 1, "username": "testuser", "role": "Employee"})()
+    @pytest.mark.parametrize(
+        "user",
+        [
+            User(1, "testuser", "psw1", "Employee"),
+            User(2, "testuser1", "psw2", "Employee"),
+            User(3, "testuser2", "psw3", "Employee")
+        ]
+    )
+    def test_status_positive(self, user, setup):
+        # user = type("User", (), {"id": 1, "username": "testuser", "role": "Employee"})()
 
         setup[0].auth_service.get_user_from_token.return_value = user
         setup[1].set_cookie("jwt_token", "valid_token")
@@ -100,7 +125,7 @@ class Test_Auth_Controller:
         data = response.get_json()
 
         assert data["authenticated"]
-        assert data["user"]["username"] == "testuser"
+        assert data["user"]["username"] == user.username
         assert data["user"]["role"] == "Employee"
 
     # EU-060

@@ -39,8 +39,8 @@ Scenario: Empty Username Input
 
 Scenario: Empty Password Input
   Given the employee is on the login screen
-  And the employee enters username "employee1"
-  When the employee does not input any value for the password
+  When the employee enters username "employee1"
+  And the employee does not input any value for the password
   And the employee clicks the login button
   Then the password field is selected
   And the employee is not redirected to the dashboard

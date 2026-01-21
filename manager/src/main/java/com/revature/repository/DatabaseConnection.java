@@ -15,17 +15,39 @@ public class DatabaseConnection {
     private final String databasePath;
 
     public DatabaseConnection() {
-        Dotenv dotenv = Dotenv.load();
+        // Try environment variables first (for Docker), then .env file (for local dev)
+        String testMode = System.getenv("TEST_MODE");
+        String dbPath = System.getenv("DATABASE_PATH");
+        String testDbPath = System.getenv("TEST_DATABASE_PATH");
 
-        boolean testMode = dotenv.get("TEST_MODE", "false").equalsIgnoreCase("true");
+        // Fallback to .env file if environment variables not set
+        if (testMode == null || dbPath == null) {
+            try {
+                Dotenv dotenv = Dotenv.configure()
+                        .ignoreIfMissing()  // Don't throw exception if .env doesn't exist
+                        .load();
 
-        String path = testMode ? dotenv.get("TEST_DATABASE_PATH") : dotenv.get("DATABASE_PATH");
+                testMode = testMode != null ? testMode : dotenv.get("TEST_MODE", "false");
+                dbPath = dbPath != null ? dbPath : dotenv.get("DATABASE_PATH");
+                testDbPath = testDbPath != null ? testDbPath : dotenv.get("TEST_DATABASE_PATH");
+            } catch (Exception e) {
+                // If .env doesn't exist and no env vars, use defaults or fail gracefully
+                System.err.println("Warning: Could not load .env file: " + e.getMessage());
+                if (dbPath == null) {
+                    throw new RuntimeException("Database path not configured. Set DATABASE_PATH environment variable.");
+                }
+            }
+        }
+
+        boolean isTestMode = "true".equalsIgnoreCase(testMode);
+        String path = isTestMode ? testDbPath : dbPath;
 
         if (path == null) {
-            throw new RuntimeException("Database path not configured");
+            throw new RuntimeException("Database path not configured. Set DATABASE_PATH or TEST_DATABASE_PATH environment variable.");
         }
 
         this.databasePath = "jdbc:sqlite:" + path;
+        System.out.println("Database configured at: " + this.databasePath);
     }
 
     public DatabaseConnection(String databasePath) {

@@ -67,7 +67,11 @@ def create_mock_connection(cursor_mock):
 class TestFindByExpenseId:
     """Test cases for find_by_expense_id."""
 
-    def test_find_by_expense_id_positive(self, approval_repository, mock_db_connection, mock_user_row):
+    @pytest.mark.parametrize(
+        "expense_id",
+        [1, 2]
+    )
+    def test_find_by_expense_id_positive(self, expense_id, approval_repository, mock_db_connection, mock_user_row):
         """Test finding a user by expense id successfully."""
         #Arrange
         cursor_mock = Mock()
@@ -78,7 +82,7 @@ class TestFindByExpenseId:
         mock_db_connection.get_connection.return_value.__exit__.return_value = None
 
         #Act
-        result = approval_repository.find_by_expense_id(1)
+        result = approval_repository.find_by_expense_id(expense_id)
 
         #Assert
         assert result is not None
@@ -113,8 +117,11 @@ class TestFindByExpenseId:
         # Assert
         assert result is None
 
-
-    def test_find_by_expense_id_correct_sql_executed(self, approval_repository, mock_db_connection, mock_user_row):
+    @pytest.mark.parametrize(
+        "expense_id",
+        [1, 2]
+    )
+    def test_find_by_expense_id_correct_sql_executed(self, expense_id, approval_repository, mock_db_connection, mock_user_row):
         """Test that the correct SQL query is executed."""
         # Arrange
         cursor_mock = Mock()
@@ -124,7 +131,7 @@ class TestFindByExpenseId:
         mock_db_connection.get_connection.return_value.__enter__.return_value = conn_mock
         mock_db_connection.get_connection.return_value.__exit__.return_value = None
         #Act
-        approval_repository.find_by_expense_id(1)
+        approval_repository.find_by_expense_id(expense_id)
 
         #Verify SQL query and parameters
         conn_mock.execute.assert_called_once()
@@ -134,13 +141,18 @@ class TestFindByExpenseId:
         #Assert
         assert "SELECT id, expense_id, status, reviewer, comment, review_date FROM approvals" in sql_query
         assert "WHERE expense_id = ?" in sql_query
-        assert params == (1, )
+        assert params == (expense_id, )
 
 
 # Find expense with status for user review test
 class TestFindExpensesWithStatusForUser:
     """Test cases for find_expenses_with_status_for_user."""
-    def test_find_expenses_with_status_positive(self, approval_repository, mock_db_connection, mock_expense_approval_row):
+
+    @pytest.mark.parametrize(
+        "expense_id",
+        [1, 2]
+    )
+    def test_find_expenses_with_status_positive(self, expense_id, approval_repository, mock_db_connection, mock_expense_approval_row):
         """Test finding expenses with status positive."""
         #Arrange
         cursor_mock = MagicMock()
@@ -150,11 +162,11 @@ class TestFindExpensesWithStatusForUser:
         mock_db_connection.get_connection.return_value.__enter__.return_value = conn_mock
         mock_db_connection.get_connection.return_value.__exit__.return_value = None
         #Act
-        results = approval_repository.find_expenses_with_status_for_user(1)
+        results = approval_repository.find_expenses_with_status_for_user(expense_id)
         #Assert
         assert len(results) == 1
         expense, approval = results[0]
-        assert expense.user_id == 1
+        assert expense.user_id == expense_id
         assert expense.amount == 100.00
         assert approval.status == "approved"
         assert approval.comment == "this is a comment"
@@ -190,7 +202,11 @@ class TestFindExpensesWithStatusForUser:
 class TestUpdateApproval:
     """Test cases for update_approval."""
 
-    def test_update_user_positive(self, approval_repository, mock_db_connection):
+    @pytest.mark.parametrize(
+        "expense_id",
+        [1, 2]
+    )
+    def test_update_user_positive(self, expense_id, approval_repository, mock_db_connection):
         """Testing updating a user's approval status positive."""
         #Arrange
         cursor_mock = Mock()
@@ -200,7 +216,7 @@ class TestUpdateApproval:
         mock_db_connection.get_connection.return_value.__enter__.return_value = conn_mock
         mock_db_connection.get_connection.return_value.__exit__.return_value = None
         #Act
-        result = approval_repository.update_status(1, status='approved')
+        result = approval_repository.update_status(expense_id, status='approved')
         #Assert
         assert result is True
 
@@ -228,7 +244,11 @@ class TestUpdateApproval:
         #Assert
         assert result is False
 
-    def test_update_approvals_correct_sql_executed(self, approval_repository, mock_db_connection):
+    @pytest.mark.parametrize(
+        "expense_id",
+        [1, 2]
+    )
+    def test_update_approvals_correct_sql_executed(self, expense_id, approval_repository, mock_db_connection):
         #Arrange
         cursor_mock = Mock()
         cursor_mock.rowcount = 1
@@ -237,7 +257,7 @@ class TestUpdateApproval:
         mock_db_connection.get_connection.return_value.__enter__.return_value = conn_mock
         mock_db_connection.get_connection.return_value.__exit__.return_value = None
         #Act
-        result = approval_repository.update_status(1, "approved")
+        result = approval_repository.update_status(expense_id, "approved")
         conn_mock.execute.assert_called_once()
         sql, params = conn_mock.execute.call_args[0]
         #Assert
@@ -247,7 +267,7 @@ class TestUpdateApproval:
         assert "comment = ?" in sql
         assert "review_date = ?" in sql
         assert "WHERE expense_id = ?" in sql
-        assert params == ("approved", None, None, None, 1)
+        assert params == ("approved", None, None, None, expense_id)
         assert result is True
 
 
