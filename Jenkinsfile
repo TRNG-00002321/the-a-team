@@ -2,30 +2,28 @@ pipeline {
     agent any
 
     stages {
-        stage('Build Images') {
+
+        stage('Build Test Image') {
             steps {
-                sh 'docker build --no-cache -t employee-app ./employee'
-//                sh 'docker build -t manager-app ./manager'
+                sh 'docker build --no-cache --target test -t employee-test ./employee'
             }
         }
 
         stage('Unit Tests') {
             steps {
-                sh 'docker run --rm employee-app pytest tests/unit_tests'
-//                sh 'docker run --rm manager-app mvn test'
+                sh 'docker run --rm employee-test pytest tests/unit_tests'
             }
         }
 
         stage('Integration Tests') {
             steps {
-                sh 'docker run --rm employee-app pytest tests/integration_tests'
+                sh 'docker run --rm employee-test pytest tests/integration_tests'
             }
         }
 
         stage('E2E Tests') {
             steps {
                 sh '''
-                  docker build --target test -t employee-test ./employee
                   docker run --rm \
                   -e TEST_MODE=true \
                   -e BROWSER=chrome \
@@ -34,6 +32,12 @@ pipeline {
                   employee-test \
                   behave tests/end_to_end_test/features
                 '''
+            }
+        }
+
+        stage('Build Production Image') {
+            steps {
+                sh 'docker build --no-cache --target production -t employee-app ./employee'
             }
         }
 
