@@ -92,81 +92,69 @@ pipeline {
         }
 
         stage('Build Application') {
-                steps {
-                    echo '📦 Building JAR file...'
-                    dir('manager') {
-                        sh '''
-                            ./mvnw clean package -DskipTests -B
-                        '''
-                    }
-                }
-            }
-
-        stage('Build Docker Image') {
             steps {
-                echo '🐳 Building Docker image...'
+                echo '📦 Building JAR file...'
                 dir('manager') {
                     sh '''
-                        docker build \
-                            -t ${APP_NAME}:${BUILD_VERSION} \
-                            -t ${APP_NAME}:latest \
-                            -f Dockerfile .
-                        echo "✅ Docker image built successfully"
-                        docker images | grep ${APP_NAME}
+                        ./mvnw clean package -DskipTests -B
                     '''
                 }
             }
         }
 
-        stage('Start Application for Testing') {
+        stage('Start Application') {
             steps {
-                echo '🚀 Starting Manager App for Testing...'
-                sh '''
-                    # Stop and remove any existing container with the same name
-                    docker rm -f ${APP_NAME}-test || true
-                    
-                    # Run the Docker container
-                    docker run -d \
-                        --name ${APP_NAME}-test \
-                        -p ${APP_PORT}:${APP_PORT} \
-                        -e SPRING_PROFILES_ACTIVE=test \
-                        -e SERVER_PORT=${APP_PORT} \
-                        ${APP_NAME}:${BUILD_VERSION}
-                    
-                    echo "⏳ Waiting for application to start..."
-                    sleep 15
-                    
-                    # Verify the container is running
-                    docker ps | grep ${APP_NAME}-test
-                    
-                    # Check application logs
-                    echo "📋 Application logs:"
-                    docker logs ${APP_NAME}-test
-                    
-                    # Check application health (adjust endpoint as needed)
-                    echo "🏥 Checking application health..."
-                    curl -f http://localhost:${APP_PORT}/actuator/health || \
-                    curl -f http://localhost:${APP_PORT}/health || \
-                    echo "⚠️ Health check endpoint not available, but container is running"
-                    
-                    echo "✅ Application started successfully on port ${APP_PORT}"
-                '''
+                echo '🚀 Starting Application...'
+                dir('manager') {
+                    sh '''
+                        # Find the JAR file
+                        JAR_FILE=$(find target -name "*.jar" -type f | grep -v original | head -n 1)
+                        echo "Starting application: $JAR_FILE"
+                        
+                        # Start the application in the background
+                        java -jar $JAR_FILE > app.log 2>&1 &
+                        APP_PID=$!
+                        echo $APP_PID > app.pid
+                        echo "Application started with PID: $APP_PID"
+                        
+                        # Wait for application to start
+                        echo "⏳ Waiting for application to start..."
+                        sleep 10
+                        
+                        # Optional: Wait for health endpoint to be ready
+                        export APP_URL=http://localhost:${APP_PORT}
+                        MAX_RETRIES=30
+                        RETRY_COUNT=0
+                        
+                        until curl -f ${APP_URL}/actuator/health || curl -f ${APP_URL}/health; do
+                            RETRY_COUNT=$((RETRY_COUNT+1))
+                            if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+                                echo "❌ Application failed to start within timeout"
+                                kill $APP_PID || true
+                                exit 1
+                            fi
+                            echo "Waiting for app to be ready... ($RETRY_COUNT/$MAX_RETRIES)"
+                            sleep 2
+                        done
+                        
+                        echo "✅ Application is ready!"
+                    '''
+                }
             }
         }
 
         stage('Integration Tests') {
             steps {
-                echo '🔗 Running Integration Tests...'
+                echo '🧪 Running Integration Tests...'
                 dir('manager') {
                     sh '''
-                        # Use localhost since tests run on host, not in container
+                        # Read the PID from file
+                        APP_PID=$(cat app.pid)
                         export APP_URL=http://localhost:${APP_PORT}
                         
-                        echo "🧪 Testing against: ${APP_URL}"
+                        echo "Testing against: ${APP_URL}"
                         
-                        # Verify the app is accessible before running tests
-                        curl -f ${APP_URL}/actuator/health || curl -f ${APP_URL}/health || echo "App is running"
-                        
+                        # Run integration tests
                         ./mvnw test \
                             -Dtest="**/integration_tests/**/Test*.java" \
                             -Dapp.url=${APP_URL} \
@@ -179,10 +167,23 @@ pipeline {
             }
             post {
                 always {
+                    dir('manager') {
+                        sh '''
+                            # Stop the application
+                            if [ -f app.pid ]; then
+                                APP_PID=$(cat app.pid)
+                                echo "🛑 Stopping application (PID: $APP_PID)"
+                                kill $APP_PID || true
+                                sleep 2
+                                kill -9 $APP_PID 2>/dev/null || true
+                                rm -f app.pid
+                            fi
+                        '''
+                    }
                     junit allowEmptyResults: true, testResults: 'manager/target/surefire-reports/*.xml'
                 }
             }
-}
+        }
 
         stage('E2E Tests with Cucumber') {
             steps {
@@ -241,6 +242,60 @@ pipeline {
                 }
             }
         }
+
+        stage('Build Docker Image') {
+            steps {
+                echo '🐳 Building Docker image...'
+                dir('manager') {
+                    sh '''
+                        docker build \
+                            -t ${APP_NAME}:${BUILD_VERSION} \
+                            -t ${APP_NAME}:latest \
+                            -f Dockerfile .
+                        echo "✅ Docker image built successfully"
+                        docker images | grep ${APP_NAME}
+                    '''
+                }
+            }
+        }
+
+        stage('Start Application') {
+            steps {
+                echo '🚀 Starting Manager App for Testing...'
+                sh '''
+                    # Stop and remove any existing container with the same name
+                    docker rm -f ${APP_NAME}-test || true
+                    
+                    # Run the Docker container
+                    docker run -d \
+                        --name ${APP_NAME}-test \
+                        -p ${APP_PORT}:${APP_PORT} \
+                        -e SPRING_PROFILES_ACTIVE=test \
+                        -e SERVER_PORT=${APP_PORT} \
+                        ${APP_NAME}:${BUILD_VERSION}
+                    
+                    echo "⏳ Waiting for application to start..."
+                    sleep 15
+                    
+                    # Verify the container is running
+                    docker ps | grep ${APP_NAME}-test
+                    
+                    # Check application logs
+                    echo "📋 Application logs:"
+                    docker logs ${APP_NAME}-test
+                    
+                    # Check application health (adjust endpoint as needed)
+                    echo "🏥 Checking application health..."
+                    curl -f http://localhost:${APP_PORT}/actuator/health || \
+                    curl -f http://localhost:${APP_PORT}/health || \
+                    echo "⚠️ Health check endpoint not available, but container is running"
+                    
+                    echo "✅ Application started successfully on port ${APP_PORT}"
+                '''
+            }
+        }
+
+        
 
         stage('Cleanup Test Container') {
             steps {
