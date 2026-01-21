@@ -25,10 +25,10 @@ docker-compose*.yml
 *.md
 docs/
 
-# Tests
-tests/
-test_*.py
-*_test.py
+# # Tests
+# tests/
+# test_*.py
+# *_test.py
 
 # Misc
 .env
