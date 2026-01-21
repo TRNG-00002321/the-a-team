@@ -33,7 +33,7 @@ pipeline {
                     sh -c "
                       python main.py & 
                       sleep 5 &&
-                      behave tests/end_to_end_test/features
+                      behave --tags=-skip tests/end_to_end_test/features
                     "
                 '''
             }

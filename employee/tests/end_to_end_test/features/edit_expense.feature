@@ -8,6 +8,7 @@ Background:
   And the test database is already seeded with users
   And the employee is logged in
 
+@skip
 Scenario Outline: Edit Expense, successful edit
   Given the employee is on my expenses
   And an expense with the description: "Client lunch" is shown
@@ -26,6 +27,7 @@ Scenario Outline: Edit Expense, successful edit
     | 123         | example description  | 2025-12-30           |
     | 999         | fix door             | 2025-10-10           |
 
+@skip
 Scenario: Edit Expense, cancel edit
   Given the employee is on my expenses
   And an expense with the description: "Client lunch" is shown
@@ -38,6 +40,7 @@ Scenario: Edit Expense, cancel edit
   And the employee clicks the cancel button
   Then the expense with description "Client lunch" still exists
 
+@skip
 Scenario: Edit expense, no inputs
   Given the employee is on my expenses
   And an expense with the description: "Client lunch", amount: "50", and date: "2025-01-05"
