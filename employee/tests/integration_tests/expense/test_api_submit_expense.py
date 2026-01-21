@@ -72,32 +72,48 @@ def authenticated_session(test_client, setup_database):
 
     yield test_client
 
-@pytest.fixture
-def created_expense(authenticated_session):
-    auth_test_client = authenticated_session
+# @pytest.fixture
+# def created_expense(authenticated_session):
+#     auth_test_client = authenticated_session
+#
+#     #Request body
+#     expense_payload = {
+#         "amount": 125.75,
+#         "description": "Taxi to client meeting"
+#     }
+#
+#     #Send post request
+#     response = auth_test_client.post(
+#         f"/api/expenses",
+#         json=expense_payload
+#     )
+#
+#     expense_id = response.get_json()["expense"]["id"]
+#
+#     # Provide the expense ID to the test
+#     yield response
 
-    #Request body
+
+#EI-215
+@pytest.mark.parametrize("amount, description", [
+    (125.75, "Taxi to client meeting"),
+    (73.00, "Office supplies"),
+    (45.50, "Team lunch"),
+    (200.00, "Conference registration")
+])
+def test_api_submit_new_expense_success(authenticated_session, amount, description):
+    auth_test_client = authenticated_session
     expense_payload = {
-        "amount": 125.75,
-        "description": "Taxi to client meeting"
+        "amount": amount,
+        "description": description
     }
 
-    #Send post request
     response = auth_test_client.post(
         f"/api/expenses",
         json=expense_payload
     )
-
     expense_id = response.get_json()["expense"]["id"]
 
-    # Provide the expense ID to the test
-    yield response
-
-
-#EI-215
-def test_api_submit_new_expense_success(authenticated_session, created_expense):
-
-    response = created_expense
 
     #Status code validation
     assert response.status_code in (200, 201)
@@ -110,17 +126,23 @@ def test_api_submit_new_expense_success(authenticated_session, created_expense):
 
     expense = body["expense"]
 
-    assert expense["amount"] == 125.75
-    assert expense["description"] == "Taxi to client meeting"
+    assert expense["amount"] == amount
+    assert expense["description"] == description
     assert expense["status"].lower() == "pending"
     assert "id" in expense
 
 #EI-216
-def test_api_submit_expense_without_auth_should_fail(test_client):
+@pytest.mark.parametrize("amount, category, description", [
+    (0, "Travel", "Taxi fare"),
+    (-50, "Food", "Dinner with client"),
+    (100, "", "Office supplies"),
+    (75.50, "Entertainment", "")
+])
+def test_api_submit_expense_without_auth_should_fail(test_client,amount, category, description):
     expense_payload = {
-        "amount": 50.00,
-        "category": "Food",
-        "description": "Lunch"
+        "amount": amount,
+        "category": category,
+        "description": description
     }
 
     response = test_client.post(

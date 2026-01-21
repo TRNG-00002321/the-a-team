@@ -79,10 +79,11 @@ class Test_Get_Delete_Expenses:
     #     assert isinstance(data["expenses"], list)
 
     # EI-210
-    def test_delete_expense_positive(self, setup):
+    @pytest.mark.parametrize("exp_to_delete_id", [1, 6])
+    def test_delete_expense_positive(self, setup, exp_to_delete_id):
         auth_test_client = setup
 
-        exp_to_delete_id = 1
+
 
         exp_deletion_response = auth_test_client.delete(
             f"/api/expenses/{exp_to_delete_id}"
@@ -94,16 +95,17 @@ class Test_Get_Delete_Expenses:
         assert data["message"] == "Expense deleted successfully"
 
     # EI-211
-    def test_delete_expense_negative(self, setup):
+    @pytest.mark.parametrize("exp_to_delete_id", [2, 3,4, 900])
+    def test_delete_expense_negative(self, setup, exp_to_delete_id):
         auth_test_client = setup
 
-        exp_to_delete_id = 9999
+
 
         exp_deletion_response = auth_test_client.delete(
             f"/api/expenses/{exp_to_delete_id}"
         )
 
-        assert exp_deletion_response.status_code == 404
+        assert exp_deletion_response.status_code in (404, 400)
 
         data = exp_deletion_response.get_json()
-        assert data["error"] == "Expense not found"
+        assert data["error"] in ("Expense not found", 'Cannot delete expense that has been reviewed')

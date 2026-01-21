@@ -52,18 +52,19 @@ def setup_database(test_client):
         conn.commit()
 
     yield
-
-def test_login_positive(test_client, setup_database):
+@pytest.mark.parametrize("username, password, emp_id", [("employee1", "password123", 1),
+                                                  ("employee2", "password123", 2)])
+def test_login_positive(test_client, setup_database, username, password, emp_id):
     data={
-        "username":"employee1",
-        "password":"password123"
+        "username":username,
+        "password":password
     }
     response = test_client.post("/api/auth/login", json=data)
     assert response.status_code == 200
     user = response.get_json()["user"]
-    assert user["username"] == "employee1"
+    assert user["username"] == username
     assert user["role"] == "Employee"
-    assert user["id"] == 1
+    assert user["id"] == emp_id
 
 @pytest.mark.parametrize("username, password", [
     ("employee1","wrong_password"),
