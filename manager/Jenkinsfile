@@ -177,12 +177,13 @@ pipeline {
                 echo '🌐 Running E2E Tests with Cucumber + Selenium...'
                 // Install Chrome outside of manager directory if not already installed
                 sh '''
-                    sudo apt install wget -y
+                    apt-get update
+                    apt-get install -y wget
                     if ! command -v google-chrome &> /dev/null; then
                         echo "Chrome not found, installing..."
                         cd /tmp
                         wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-                        sudo apt install -y ./google-chrome-stable_current_amd64.deb
+                        apt-get install -y ./google-chrome-stable_current_amd64.deb
                         rm google-chrome-stable_current_amd64.deb
                     else
                         echo "Chrome already installed, skipping installation"
