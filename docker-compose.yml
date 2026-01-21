@@ -9,7 +9,6 @@ services:
       HEADLESS: "true"
       DATABASE_PATH: /app/expense_manager.db
       TEST_DATABASE_PATH: /app/tests/test_db/test_expense_manager.db
-      SELENIUM_REMOTE_URL: http://selenium:4444/wd/hub
     # volumes:
     #   - db-data:/data
 
