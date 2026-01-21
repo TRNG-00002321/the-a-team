@@ -53,12 +53,16 @@ def setup_database(test_client):
 
   yield
 
-def test_get_all_expense_positive_200(setup_database, test_client):
+@pytest.mark.parametrize("username, password", [
+    ("employee1", "password123"),
+    ("employee2", "password123")
+])
+def test_get_all_expense_positive_200(setup_database, test_client, username, password):
   auth_response = test_client.post(
     "/api/auth/login",
     json={
-      "username": "employee1",
-      "password": "password123"
+      "username": username,
+      "password": password
     }
   )
 

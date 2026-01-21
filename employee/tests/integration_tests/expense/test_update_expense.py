@@ -51,7 +51,12 @@ def setup_database(test_client):
 
     yield
 
-def test_update_expense(setup_database, test_client):
+@pytest.mark.parametrize("expense_id,amount, description, date", [
+    (1,99.99, "Updated lunch", "2025-01-06"),
+    (6, 275.00, 'Travel Expenses', '2025-01-07'),
+    (6, 275.00, 'Travel Expenses', '2025-01-10')
+])
+def test_update_expense(setup_database, test_client, expense_id, amount, description, date):
   auth_response = test_client.post(
     "/api/auth/login",
     json={
@@ -62,23 +67,51 @@ def test_update_expense(setup_database, test_client):
 
   assert auth_response.status_code == 200
 
-  expense_id = 1
+
 
   response = test_client.put(
     f"/api/expenses/{expense_id}",
     json={
-      "amount": 99.99,
-      "description": "Updated lunch",
-      "date": "2025-01-06"
+      "amount": amount,
+      "description": description,
+      "date": date
     }
   )
 
   assert response.status_code == 200
 
   data = response.get_json()
-  assert data["expense"]["amount"] == 99.99
-  assert data["expense"]["description"] == "Updated lunch"
+  assert data["expense"]["amount"] == amount
+  assert data["expense"]["description"] == description
   assert data["message"] == "Expense updated successfully"
+
+@pytest.mark.parametrize("expense_id,amount, description, date", [
+    (2,99.99, "Updated lunch", "2025-01-06"),
+    (3, 275.00, 'Travel Expenses', '2025-01-07')
+])
+def test_update_processed_expense(setup_database, test_client, expense_id, amount, description, date):
+  auth_response = test_client.post(
+    "/api/auth/login",
+    json={
+      "username": "employee1",
+      "password": "password123"
+    }
+  )
+
+  assert auth_response.status_code == 200
+
+
+
+  response = test_client.put(
+    f"/api/expenses/{expense_id}",
+    json={
+      "amount": amount,
+      "description": description,
+      "date": date
+    }
+  )
+
+  assert response.status_code == 400
 
 @pytest.mark.parametrize("amount, description, date", [
   (None,"Updated lunch","2025-01-06"),
@@ -143,7 +176,11 @@ def test_update_expense_invalid_amount(setup_database, amount, description, date
   data = response.get_json()
   assert data["error"] == "Amount must be a valid number"
 
-def test_update_expense_missing_expense_id(setup_database, test_client):
+@pytest.mark.parametrize("expense_id, amount, description, date", [
+    (9999,99.99, "Updated lunch", "2025-01-06"),
+    (0, 275.00, 'Travel Expenses', '2025-01-07')
+])
+def test_update_expense_missing_expense_id(setup_database, test_client, expense_id, amount, description, date):
   auth_response = test_client.post(
   f"/api/auth/login",
     json={
@@ -154,14 +191,14 @@ def test_update_expense_missing_expense_id(setup_database, test_client):
 
   assert auth_response.status_code == 200
 
-  expense_id = 9999
+
 
   response = test_client.put(
     f"/api/expenses/{expense_id}",
     json={
-      "amount": 99.99,
-      "description": "Updated lunch",
-      "date": "2025-01-06"
+      "amount": amount,
+      "description": description,
+      "date": date
     }
   )
 
@@ -193,7 +230,11 @@ def test_update_expense_missing_json(setup_database, test_client):
   data = response.get_json()
   assert data["error"] == "JSON data required"
 
-def test_update_expense_not_owner(setup_database, test_client):
+@pytest.mark.parametrize("expense_id, amount, description, date", [
+    (4,10.0, "Hack attempt", "2025-01-06"),
+    (5,20.0, "Another hack", "2025-01-07")
+])
+def test_update_expense_not_owner(setup_database, test_client,expense_id, amount, description, date):
   auth_response = test_client.post(
     "/api/auth/login",
     json={"username": "employee1", "password": "password123"}
@@ -201,27 +242,32 @@ def test_update_expense_not_owner(setup_database, test_client):
   assert auth_response.status_code == 200
 
   # Expense 4 belongs to employee2
-  expense_id = 4
+
   response = test_client.put(
     f"/api/expenses/{expense_id}",
     json={
-      "amount": 10.0,
-      "description": "Hack attempt",
-      "date": "2025-01-06"
+      "amount": amount,
+      "description": description,
+      "date": date
     }
   )
 
   assert response.status_code == 404
 
-def test_update_expense_not_authorized(setup_database, test_client):
+@pytest.mark.parametrize("expense_id, amount, description, date", [
+    (4,10.0, "Hack attempt", "2025-01-06"),
+    (6,20.0, "Another hack", "2025-01-07"),
+    (234, 500.0, "Non existent expense", "2025-01-08")
+])
+def test_update_expense_not_authorized(setup_database, test_client,expense_id, amount, description, date):
   # Expense 4 belongs to employee2
-  expense_id = 1
+
   response = test_client.put(
     f"/api/expenses/{expense_id}",
     json={
-      "amount": 10.0,
-      "description": "Hack attempt",
-      "date": "2025-01-06"
+      "amount": amount,
+      "description": description,
+      "date": date
     }
   )
 
