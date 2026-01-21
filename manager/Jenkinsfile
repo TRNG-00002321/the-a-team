@@ -177,6 +177,7 @@ pipeline {
                 echo '🌐 Running E2E Tests with Cucumber + Selenium...'
                 // Install Chrome outside of manager directory if not already installed
                 sh '''
+                    sudo apt install wget -y
                     if ! command -v google-chrome &> /dev/null; then
                         echo "Chrome not found, installing..."
                         cd /tmp
