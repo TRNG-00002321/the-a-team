@@ -47,7 +47,10 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh 'docker-compose up -d employee'
+                sh '''
+                  docker-compose down --remove-orphans || true
+                  docker-compose up -d employee
+                '''
             }
         }
     }
