@@ -227,6 +227,17 @@ pipeline {
             }
         }
 
+        stage('Generate Allure Report') {
+            steps {
+                script {
+                    allure([
+                        includeProperties: false,
+                        results: [[path: 'manager/target/allure-results']]
+                    ])
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 echo '🐳 Building Docker image...'
@@ -279,37 +290,24 @@ pipeline {
             }
         }
 
-        
-
-        stage('Cleanup Test Container') {
-            steps {
-                sh '''
-                    docker stop ${APP_NAME}-test 2>/dev/null || true
-                    docker rm ${APP_NAME}-test 2>/dev/null || true
-                    docker volume rm expense-test-data 2>/dev/null || true
-                '''
-            }
-        }
-
-        stage('Generate Allure Report') {
-            steps {
-                script {
-                    allure([
-                        includeProperties: false,
-                        results: [[path: 'manager/target/allure-results']]
-                    ])
-                }
-            }
-        }
+        // stage('Cleanup Test Container') {
+        //     steps {
+        //         sh '''
+        //             docker stop ${APP_NAME}-test 2>/dev/null || true
+        //             docker rm ${APP_NAME}-test 2>/dev/null || true
+        //             docker volume rm expense-test-data 2>/dev/null || true
+        //         '''
+        //     }
+        // }
     }
 
     post {
         always {
-            sh '''
-                docker stop ${APP_NAME}-test 2>/dev/null || true
-                docker rm ${APP_NAME}-test 2>/dev/null || true
-                docker image prune -f || true
-            '''
+            // sh '''
+            //     docker stop ${APP_NAME}-test 2>/dev/null || true
+            //     docker rm ${APP_NAME}-test 2>/dev/null || true
+            //     docker image prune -f || true
+            // '''
             archiveArtifacts artifacts: 'manager/target/**/*.jar', allowEmptyArchive: true
         }
         success {
