@@ -25,12 +25,14 @@ pipeline {
         stage('E2E Tests') {
             steps {
                 sh '''
-                docker run --rm \
+                  docker build --target test -t employee-test ./employee
+                  docker run --rm \
                   -e TEST_MODE=true \
                   -e BROWSER=chrome \
                   -e HEADLESS=true \
                   -e TEST_DATABASE_PATH=/app/tests/test_db/test_expense_manager.db \
-                  employee-app behave tests/end_to_end_test/features
+                  employee-test \
+                  behave tests/end_to_end_test/features
                 '''
             }
         }
