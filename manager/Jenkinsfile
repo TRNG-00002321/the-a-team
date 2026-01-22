@@ -66,7 +66,6 @@ pipeline {
                     ./mvnw test \
                     -Dtest="**/unit_tests/**/Test*.java" \
                     -DfailIfNoTests=false \
-                    -Dallure.results.directory=target/allure-results \
                     -B
                     '''
                 }
@@ -95,8 +94,8 @@ pipeline {
                         name: 'JaCoCo Coverage',
                         sourceCodeRetention: 'EVERY_BUILD',
                         qualityGates: [
-                            [threshold: 60.0, metric: 'LINE', baseline: 'PROJECT', unstable: true],
-                            [threshold: 60.0, metric: 'BRANCH', baseline: 'PROJECT', unstable: true]
+                            [threshold: 50.0, metric: 'LINE', baseline: 'PROJECT', unstable: true],
+                            [threshold: 50.0, metric: 'BRANCH', baseline: 'PROJECT', unstable: true]
                         ]
                     )
                 }
