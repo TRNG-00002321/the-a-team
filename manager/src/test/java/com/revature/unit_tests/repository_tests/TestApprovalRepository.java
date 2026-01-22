@@ -7,6 +7,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -17,14 +19,13 @@ import java.sql.*;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class                                            TestApprovalRepository {
+public class TestApprovalRepository {
     @Mock
     private DatabaseConnection db;
 
@@ -47,150 +48,97 @@ public class                                            TestApprovalRepository {
     }
 
     /****************************************************************************************************
-     * FIND BY EXPENSE ID TESTS                                                                                 *
+     * FIND BY EXPENSE ID TESTS                                                                         *
      ****************************************************************************************************/
-    //MU-132
-    @Test
-    @DisplayName("Test findByExpenseId Throws Exception")
-    public void testFindByExpenseId_databaseException() throws Exception {
-        // Arrange
+    //MU-132, MU-133, MU-134
+    @ParameterizedTest
+    @CsvSource({
+            "true, false, false, ''",                    // MU-134: Has result
+            "false, true, false, ''",                    // MU-133: Empty result
+            "false, false, true, 'DB failure'"          // MU-132: Exception thrown
+    })
+    @DisplayName("Test findByExpenseId All Scenarios")
+    public void testFindByExpenseId_AllScenarios(
+            boolean hasResult,
+            boolean expectEmpty,
+            boolean throwException,
+            String errorMessage
+    ) throws Exception {
         int expenseId = 1;
-        when(preparedStatement.executeQuery()).thenThrow(new SQLException("DB failure"));
 
-        // Act + Assert
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
-                () -> approvalRepo.findByExpenseId(expenseId)
-        );
+        if (throwException) {
+            when(preparedStatement.executeQuery()).thenThrow(new SQLException(errorMessage));
+            RuntimeException exception = assertThrows(
+                    RuntimeException.class,
+                    () -> approvalRepo.findByExpenseId(expenseId)
+            );
+            assertTrue(exception.getMessage().contains("Error finding approval for expense: " + expenseId));
+            assertInstanceOf(SQLException.class, exception.getCause());
+        } else {
+            when(preparedStatement.executeQuery()).thenReturn(resultSet);
+            when(resultSet.next()).thenReturn(hasResult, false);
 
-        assertTrue(exception.getMessage().contains("Error finding approval for expense: " + expenseId));
-        assertNotNull(exception.getCause());
-        assertInstanceOf(SQLException.class, exception.getCause());
-    }
-
-    //MU-133
-    @Test
-    @DisplayName("Test findByExpenseId Returns Empty Optional")
-    public void testFindByExpenseId_Empty() throws Exception {
-        // Arrange
-        int expenseId = 1;
-        when(preparedStatement.executeQuery()).thenReturn(resultSet);
-        when(resultSet.next()).thenReturn(false); // No rows found
-
-        //Act
-        Optional<Approval> result = approvalRepo.findByExpenseId(expenseId);
-
-        //Assert
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
-
-    //MU-134
-    @Test
-    @DisplayName("Test findByExpenseId Positive")
-    public void testFindByExpenseId_Positive() throws Exception {
-        // Arrange
-        int expenseId = 1;
-        when(preparedStatement.executeQuery()).thenReturn(resultSet);
-        when(resultSet.next()).thenReturn(true, false); // No rows found
-
-        //Act
-        Optional<Approval> result = approvalRepo.findByExpenseId(expenseId);
-
-        //Assert
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
+            Optional<Approval> result = approvalRepo.findByExpenseId(expenseId);
+            assertNotNull(result);
+            assertEquals(expectEmpty, result.isEmpty());
+        }
     }
 
     /****************************************************************************************************
      * UPDATE APPROVAL STATUS TESTS                                                                     *
      ****************************************************************************************************/
-    //MU-135
-    @Test
-    @DisplayName("Test updateApprovalStatus Throws Exception")
-    public void testUpdateApprovalStatus_Exception() throws SQLException {
-        // Arrange
+    //MU-135, MU-136, MU-137
+    @ParameterizedTest
+    @CsvSource({
+            "0, false, false, ''",                // MU-136: No rows updated
+            "1, true, false, ''",                 // MU-137: Row updated
+            "0, false, true, 'DB failure'"       // MU-135: Exception thrown
+    })
+    @DisplayName("Test updateApprovalStatus All Scenarios")
+    public void testUpdateApprovalStatus_AllScenarios(
+            int rowsUpdated,
+            boolean expectedResult,
+            boolean throwException,
+            String errorMessage
+    ) throws SQLException {
         int expenseId = 1;
         String status = "denied";
         int reviewerId = 1;
         String comment = "test comment";
-        when(preparedStatement.executeUpdate()).thenThrow(new SQLException("DB failure"));
 
-        // Act + Assert
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
-                () -> approvalRepo.updateApprovalStatus(expenseId, status, reviewerId, comment)
-        );
-
-        assertTrue(exception.getMessage().contains("Error updating approval for expense: " + expenseId));
-        assertNotNull(exception.getCause());
-        assertInstanceOf(SQLException.class, exception.getCause());
-    }
-
-    //MU-136
-    @Test
-    @DisplayName("Test updateApprovalStatus Returns False")
-    public void testUpdateApprovalStatus_False() throws SQLException {
-        // Arrange
-        int expenseId = 1;
-        String status = "denied";
-        int reviewerId = 1;
-        String comment = "test comment";
-        when(preparedStatement.executeUpdate()).thenReturn(0);
-
-        //Act
-        boolean result = approvalRepo.updateApprovalStatus(expenseId, status, reviewerId, comment);
-
-        //Assert
-        assertFalse(result);
-    }
-
-    //MU-137
-    @Test
-    @DisplayName("Test updateApprovalStatus Returns True")
-    public void testUpdateApprovalStatus_True() throws SQLException {
-        // Arrange
-        int expenseId = 1;
-        String status = "denied";
-        int reviewerId = 1;
-        String comment = "test comment";
-        when(preparedStatement.executeUpdate()).thenReturn(1);
-
-        //Act
-        boolean result = approvalRepo.updateApprovalStatus(expenseId, status, reviewerId, comment);
-
-        //Assert
-        assertTrue(result);
+        if (throwException) {
+            when(preparedStatement.executeUpdate()).thenThrow(new SQLException(errorMessage));
+            RuntimeException exception = assertThrows(
+                    RuntimeException.class,
+                    () -> approvalRepo.updateApprovalStatus(expenseId, status, reviewerId, comment)
+            );
+            assertTrue(exception.getMessage().contains("Error updating approval for expense: " + expenseId));
+            assertInstanceOf(SQLException.class, exception.getCause());
+        } else {
+            when(preparedStatement.executeUpdate()).thenReturn(rowsUpdated);
+            boolean result = approvalRepo.updateApprovalStatus(expenseId, status, reviewerId, comment);
+            assertEquals(expectedResult, result);
+        }
     }
 
     //MU-138
     @Test
     @DisplayName("Test updateApprovalStatus Correct Fields")
     public void testUpdateApprovalStatus_CorrectFields() throws SQLException {
-
-        // Arrange
         int expenseId = 1;
         String status = "approved";
         int reviewerId = 1;
         String comment = "test comment";
-        when(preparedStatement.executeUpdate()).thenReturn(1); // 1 row updated
+        when(preparedStatement.executeUpdate()).thenReturn(1);
 
-        // Act
-        boolean result = approvalRepo.updateApprovalStatus(
-                expenseId, status, reviewerId, comment
-        );
+        boolean result = approvalRepo.updateApprovalStatus(expenseId, status, reviewerId, comment);
 
-        // Assert
         assertTrue(result);
 
-        // Verify correct parameter binding
         verify(preparedStatement).setString(1, status);
         verify(preparedStatement).setInt(2, reviewerId);
         verify(preparedStatement).setString(3, comment);
-
-        // review_date is time-based verify it's set, not exact value
         verify(preparedStatement).setString(eq(4), anyString());
-
         verify(preparedStatement).setInt(5, expenseId);
         verify(preparedStatement).executeUpdate();
     }
@@ -198,59 +146,29 @@ public class                                            TestApprovalRepository {
     /****************************************************************************************************
      * CREATE APPROVAL TESTS                                                                            *
      ****************************************************************************************************/
-    //MU-139
-    @Test
-    @DisplayName("Test createApproval Throws Exception No Rows Updated")
-    public void testCreateApproval_ExceptionNoRowsUpdated() throws SQLException {
-        // Arrange
+    //MU-139, MU-140
+    @ParameterizedTest
+    @CsvSource({
+            "0, false, 'Creating approval failed, no rows affected.'",
+            "1, false, 'Creating approval failed, no ID obtained.'"
+    })
+    @DisplayName("Test createApproval Throws Exception")
+    public void testCreateApproval_Exception(int rowsUpdated, boolean hasGeneratedKey, String expectedMessage) throws SQLException {
         int expenseId = 1;
         String status = "pending";
 
         when(connection.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS)))
                 .thenReturn(preparedStatement);
-        when(preparedStatement.executeUpdate()).thenReturn(0);
-
-        // Act + Assert
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
-                () -> approvalRepo.createApproval(expenseId, status)
-        );
-
-        assertEquals(
-                "Creating approval failed, no rows affected.",
-                exception.getMessage()
-        );
-
-        verify(preparedStatement).setInt(1, expenseId);
-        verify(preparedStatement).setString(2, status);
-    }
-
-    //MU-140
-    @Test
-    @DisplayName("Test createApproval Throws Exception No ID")
-    public void testCreateApproval_ExceptionNoID() throws SQLException {
-        // Arrange
-        int expenseId = 1;
-        String status = "pending";
-
-        when(connection.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS)))
-                .thenReturn(preparedStatement);
-        when(preparedStatement.executeUpdate()).thenReturn(1);
+        when(preparedStatement.executeUpdate()).thenReturn(rowsUpdated);
         when(preparedStatement.getGeneratedKeys()).thenReturn(resultSet);
-        when(resultSet.next()).thenReturn(false);
+        when(resultSet.next()).thenReturn(hasGeneratedKey);
 
-
-        // Act + Assert
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
                 () -> approvalRepo.createApproval(expenseId, status)
         );
 
-        assertEquals(
-                "Creating approval failed, no ID obtained.",
-                exception.getMessage()
-        );
-
+        assertEquals(expectedMessage, exception.getMessage());
         verify(preparedStatement).setInt(1, expenseId);
         verify(preparedStatement).setString(2, status);
     }
@@ -259,7 +177,6 @@ public class                                            TestApprovalRepository {
     @Test
     @DisplayName("Test createApproval Positive")
     public void testCreateApproval_Positive() throws SQLException {
-        // Arrange
         int expenseId = 1;
         String status = "pending";
         when(connection.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS)))
@@ -268,13 +185,9 @@ public class                                            TestApprovalRepository {
         when(preparedStatement.getGeneratedKeys()).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(true);
 
-        // Act
         Approval result = approvalRepo.createApproval(expenseId, status);
 
-        // Assert
         assertNotNull(result);
-
-        // Verify correct parameter binding
         verify(preparedStatement).setInt(1, expenseId);
         verify(preparedStatement).setString(2, status);
     }

@@ -50,9 +50,17 @@ class Test_Authentication_Service:
         setup[0].find_by_id.assert_called_once_with(user_id)
 
     # EU-016
-    def test_generate_jwt_token(self, setup):
+    @pytest.mark.parametrize(
+        "user",
+        [
+            User(1, "testUser1", "pass1", "Employee"),
+            User(2, "testUser2", "pass2", "Employee"),
+            User(3, "testUser3", "pass3", "Employee")
+        ]
+    )
+    def test_generate_jwt_token(self, user, setup):
         # Assign
-        user = User(1, "testUser", "pass", "Employee")
+        # user = User(1, "testUser", "pass", "Employee")
 
         # Act
         with patch("jwt.encode", return_value="encoded.jwt") as mock_encode:
@@ -63,10 +71,18 @@ class Test_Authentication_Service:
         mock_encode.assert_called_once()
 
     # EU-017
-    def test_validate_jwt_token_valid(self, setup):
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {"user_id": 1},
+            {"user_id": 2},
+            {"user_id": 3}
+        ]
+    )
+    def test_validate_jwt_token_valid(self, payload, setup):
         # Assign
         token = "valid.token"
-        payload = {"user_id": 123}
+        # payload = {"user_id": 123}
 
         # Act
         with patch("jwt.decode", return_value=payload):
@@ -89,19 +105,27 @@ class Test_Authentication_Service:
         assert result is None
 
     # EU-20
-    def test_get_user_from_token_valid(self, setup):
+    @pytest.mark.parametrize(
+        "user",
+        [
+            User(1, "testUser1", "pass1", "Employee"),
+            User(2, "testUser2", "pass2", "Employee"),
+            User(3, "testUser3", "pass3", "Employee")
+        ]
+    )
+    def test_get_user_from_token_valid(self, user, setup):
         # Assign
         token = "valid.token"
         payload = {"user_id": 1}
-        user1 = User(1, "testUser1", "testPassword1", "Employee")
+        # user1 = User(1, "testUser1", "testPassword1", "Employee")
 
         # Act
         with patch.object(setup[1],"validate_jwt_token", return_value=payload), \
-            patch.object(setup[1], "get_user_by_id", return_value=user1):
+            patch.object(setup[1], "get_user_by_id", return_value=user):
             result = setup[1].get_user_from_token(token)
 
         # Assert
-        assert result == user1
+        assert result == user
 
     # EU-21
     def test_get_user_from_token_invalid(self, setup):
