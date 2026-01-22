@@ -24,11 +24,13 @@ FROM eclipse-temurin:17-jre
 WORKDIR /app
 
 # Install wget for healthcheck
-RUN apk add --no-cache wget
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends wget && \
+    rm -rf /var/lib/apt/lists/*
 
-# Create non-root user for security
-RUN addgroup -g 1001 appgroup && \
-    adduser -u 1001 -G appgroup -D appuser
+# Create non-root user for security (Debian/Ubuntu syntax)
+RUN groupadd -g 1001 appgroup && \
+    useradd -u 1001 -g appgroup -m -s /bin/bash appuser
 
 # Copy the built JAR from builder stage
 COPY --from=builder /app/target/manager-1.0-SNAPSHOT.jar app.jar
