@@ -192,7 +192,7 @@ pipeline {
                 // Run tests in manager directory
                 dir('manager') {
                     sh '''
-                        mvn test \
+                        ./mvnw test \
                             -Dtest="com.revature.end_to_end_tests.runners.TestRunner" \
                             -DfailIfNoTests=false \
                             -B || true
