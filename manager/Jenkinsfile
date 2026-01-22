@@ -55,6 +55,7 @@ pipeline {
                     ./mvnw test \
                     -Dtest="**/unit_tests/**/Test*.java" \
                     -DfailIfNoTests=false \
+                    -Dallure.results.directory=target/allure-results \
                     -B
                     '''
                 }
