@@ -47,6 +47,17 @@ pipeline {
             }
         }
 
+        stage('Build Application') {
+            steps {
+                echo '📦 Building JAR file...'
+                dir('manager') {
+                    sh '''
+                        ./mvnw clean package -DskipTests -B
+                    '''
+                }
+            }
+        }
+
         stage('Unit Tests') {
             steps {
                 echo '🧪 Running Unit Tests...'
@@ -88,17 +99,6 @@ pipeline {
                             [threshold: 60.0, metric: 'BRANCH', baseline: 'PROJECT', unstable: true]
                         ]
                     )
-                }
-            }
-        }
-
-        stage('Build Application') {
-            steps {
-                echo '📦 Building JAR file...'
-                dir('manager') {
-                    sh '''
-                        ./mvnw clean package -DskipTests -B
-                    '''
                 }
             }
         }
