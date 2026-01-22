@@ -28,5 +28,6 @@ import static io.cucumber.junit.platform.engine.Constants.FILTER_TAGS_PROPERTY_N
         key = FILTER_TAGS_PROPERTY_NAME,
         value = "not @skip"
 )
+
 public class TestRunner {
 }
