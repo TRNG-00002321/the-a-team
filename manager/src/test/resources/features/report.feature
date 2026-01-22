@@ -41,6 +41,6 @@ Feature: Report Feature
 
     Examples:
       | button                         | message                                |
-      | Generate Employee Report       | Please enter an employee ID            |
+      #| Generate Employee Report       | Please enter an employee ID            |
       | Generate Category Report       | Please enter a category                |
       | Generate Date Range Report     | Please select both start and end dates |

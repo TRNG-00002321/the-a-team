@@ -14,7 +14,7 @@ Feature: Manager Authentication
     And the manager enters password "<password>"
     And the manager clicks the login button
     Then the manager sees the message: "<message>"
-    And the manager <redirect_status> redirected to the manager dashboard
+    And the manager "<redirect_status>" redirected to the manager dashboard
 
     Examples:
       | username    | password        | message                                                      | redirect_status |

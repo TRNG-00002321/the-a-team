@@ -64,13 +64,21 @@ public class AuthSteps {
         assertTrue(message.getText().contains(arg0));
     }
 
-    @And("the manager is redirected to the manager dashboard")
-    public void theManagerIsRedirectedToTheManagerDashboard() {
+    @Then("the manager {string} redirected to the manager dashboard")
+    public void theManagerIsRedirectedToTheManagerDashboard(String condition) {
         // Write code here that turns the phrase above into concrete actions
+        if(condition.equals("is")){
         WebElement title = dashboardPage.waitForElement(
                 By.xpath("//h1[normalize-space()='Manager Expense Dashboard']"));
 
         assertTrue(title.getText().contains("Manager Expense Dashboard"));
+        }
+        else {
+            WebElement title = dashboardPage.waitForElement(
+                    By.xpath("//h1[normalize-space()='Manager Expense Portal']"));
+
+            assertTrue(title.getText().contains("Manager Expense Portal"));
+        }
     }
 
     @Then("the manager is not redirected to the dashboard")
@@ -129,4 +137,6 @@ public class AuthSteps {
         // Write code here that turns the phrase above into concrete actions
         assertEquals("Manager Login - Expense Manager", context.getDriver().getTitle());
     }
+
+
 }

@@ -10,7 +10,10 @@ import io.cucumber.java.en.When;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.time.Duration;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,10 +22,12 @@ public class ViewExpenseSteps {
     private final TestContext context;
     private DashboardPage dashboardPage;
     private WebDriver driver;
+    private WebDriverWait wait;
 
     public ViewExpenseSteps(TestContext context){
         this.context = context;
         this.driver = context.getDriver();
+        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     }
 
     @Given("the manager is on the all expenses screen")
@@ -70,7 +75,8 @@ public class ViewExpenseSteps {
 
     @Then("the manager is shown the message: {string}")
     public void theManagerIsShownTheMessage(String arg0) {
-        WebElement message = driver.findElement(By.tagName("p"));
+
+        WebElement message = wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("p")));
         assertEquals(arg0, message.getText());
     }
 }
