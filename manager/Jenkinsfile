@@ -172,23 +172,8 @@ pipeline {
             }
         }
 
-        stage('E2E Tests with Cucumber') {
+        stage('Run E2E Tests') {
             steps {
-                echo '🌐 Running E2E Tests with Cucumber + Selenium...'
-                // Install Chrome outside of manager directory if not already installed
-                sh '''
-                    apt-get update
-                    apt-get install -y wget
-                    if ! command -v google-chrome &> /dev/null; then
-                        echo "Chrome not found, installing..."
-                        cd /tmp
-                        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-                        apt-get install -y ./google-chrome-stable_current_amd64.deb
-                        rm google-chrome-stable_current_amd64.deb
-                    else
-                        echo "Chrome already installed, skipping installation"
-                    fi
-                '''
                 // Run tests in manager directory
                 dir('manager') {
                     sh '''
@@ -197,21 +182,22 @@ pipeline {
                             -DfailIfNoTests=false \
                             -B || true
                     '''
-                    }
-                    post {
-                        always {
-                            dir('manager') {
-                                sh '''
-                                    # Stop the application
-                                    if [ -f app.pid ]; then
-                                        APP_PID=$(cat app.pid)
-                                        echo "🛑 Stopping application (PID: $APP_PID)"
-                                        kill $APP_PID || true
-                                        sleep 2
-                                        kill -9 $APP_PID 2>/dev/null || true
-                                        rm -f app.pid
-                                    fi
-                                '''
+                }
+            }
+            post {
+                always {
+                    dir('manager') {
+                        sh '''
+                            # Stop the application
+                            if [ -f app.pid ]; then
+                                APP_PID=$(cat app.pid)
+                                echo "🛑 Stopping application (PID: $APP_PID)"
+                                kill $APP_PID || true
+                                sleep 2
+                                kill -9 $APP_PID 2>/dev/null || true
+                                rm -f app.pid
+                            fi
+                        '''
                     }
                     junit allowEmptyResults: true, testResults: 'manager/target/surefire-reports/*.xml, manager/target/cucumber-reports/cucumber.xml'
                     publishHTML(target: [
@@ -223,7 +209,6 @@ pipeline {
                         reportName: 'Cucumber E2E Test Report'
                     ])
                 }
-            }
             }
         }
 
