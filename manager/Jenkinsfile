@@ -212,18 +212,18 @@ pipeline {
             }
         }
 
-        // stage('Generate Allure Report') {
-        //     steps {
-        //         script {
-        //             allure([
-        //                 includeProperties: false,
-        //                 jdk: '',
-        //                 resultPolicy: 'LEAVE_AS_IS',
-        //                 results: [[path: 'manager/target/allure-results']]
-        //             ])
-        //         }
-        //     }
-        // }
+        stage('Generate Allure Report') {
+            steps {
+                script {
+                    allure([
+                        includeProperties: false,
+                        jdk: '',
+                        resultPolicy: 'LEAVE_AS_IS',
+                        results: [[path: 'manager/target/allure-results']]
+                    ])
+                }
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
