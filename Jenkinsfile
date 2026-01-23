@@ -13,9 +13,8 @@ pipeline {
         stage('Prepare Report Directories') {
             steps {
                 sh '''
-                    rm -rf allure-results htmlcov
+                    rm -rf allure-results htmlcov coverage.xml
                     mkdir -p allure-results htmlcov
-                    chmod 777 allure-results htmlcov
                 '''
             }
         }
@@ -23,14 +22,15 @@ pipeline {
             steps {
                 sh '''
                     docker run --rm \
-                    --user $(id -u):$(id -g) \
-                    -v ${ALLURE_RESULTS}:/tmp/allure-results \
-                    -v ${COVERAGE_DIR}:/app/htmlcov \
+                    -v ${WORKSPACE}/allure-results:/tmp/allure-results \
+                    -v ${WORKSPACE}/coverage.xml:/tmp/coverage.xml \
+                    -v ${WORKSPACE}/htmlcov:/tmp/htmlcov \
                     employee-test \
                     pytest tests/unit_tests \
                     --alluredir=/tmp/allure-results \
                     --cov=src \
-                    --cov-report=html:/app/htmlcov
+                    --cov-report=xml:/tmp/coverage.xml \
+                    --cov-report=html:/tmp/htmlcov
                 '''
             }
         }
@@ -38,8 +38,7 @@ pipeline {
             steps {
                 sh '''
                     docker run --rm \
-                    --user $(id -u):$(id -g) \
-                    -v ${ALLURE_RESULTS}:/tmp/allure-results \
+                    -v ${WORKSPACE}/allure-results:/tmp/allure-results \
                     employee-test \
                     pytest tests/integration_tests \
                     --alluredir=/tmp/allure-results
@@ -50,24 +49,23 @@ pipeline {
             steps {
                 sh '''
                     docker run --rm \
-                    --user $(id -u):$(id -g) \
-                    -v ${ALLURE_RESULTS}:/tmp/allure-results \
+                    -v ${WORKSPACE}/allure-results:/tmp/allure-results \
                     -e TEST_MODE=true \
                     -e BROWSER=chrome \
                     -e HEADLESS=true \
                     -e TEST_DATABASE_PATH=/app/tests/test_db/test_expense_manager.db \
                     employee-test \
                     sh -c "
-                    python main.py & 
-                    APP_PID=\$! ;
-                    sleep 5 ;
+                    python main.py &
+                    APP_PID=\$!;
+                    sleep 5;
                     behave \
                         --tags=-skip \
                         -f allure_behave.formatter:AllureFormatter \
                         -o /tmp/allure-results \
-                        tests/end_to_end_test/features ;
-                    EXIT_CODE=\$? ;
-                    kill \$APP_PID 2>/dev/null || true ;
+                        tests/end_to_end_test/features;
+                    EXIT_CODE=\$?;
+                    kill \$APP_PID;
                     exit \$EXIT_CODE
                     "
                 '''
@@ -89,28 +87,21 @@ pipeline {
     }
     post {
         always {
-            script {
-                // Check if allure-results has files
-                sh 'ls -la allure-results/ || echo "No allure results found"'
-                
-                // Generate and publish Allure report
-                allure([
-                    includeProperties: false,
-                    jdk: '',
-                    properties: [],
-                    reportBuildPolicy: 'ALWAYS',
-                    results: [[path: 'employee/allure-results']]
-                ])
-            }
-            publishHTML([
-                allowMissing: true,
-                alwaysLinkToLastBuild: true,
-                keepAll: true,
-                reportDir: 'htmlcov',
-                reportFiles: 'index.html',
-                reportName: 'Coverage Report'
-            ])
-            sh 'docker system prune -f'
+
+            // 🔹 Allure (Jenkins Allure plugin)
+            allure(
+                includeProperties: false,
+                jdk: '',
+                results: [[path: 'allure-results']]
+            )
+
+            // 🔹 Coverage (Jenkins Coverage plugin)
+            publishCoverage adapters: [
+                coberturaAdapter('coverage.xml')
+            ]
+
+            // 🔹 Keep HTML coverage
+            archiveArtifacts artifacts: 'htmlcov/**', allowEmptyArchive: true
         }
     }
 }
