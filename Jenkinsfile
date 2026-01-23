@@ -1,32 +1,29 @@
 pipeline {
     agent any
-
     environment {
         ALLURE_RESULTS = "${WORKSPACE}/allure-results"
         COVERAGE_DIR   = "${WORKSPACE}/htmlcov"
     }
-
     stages {
-
         stage('Build Test Image') {
             steps {
                 sh 'docker build --no-cache --target test -t employee-test ./employee'
             }
         }
-
         stage('Prepare Report Directories') {
             steps {
                 sh '''
                     rm -rf allure-results htmlcov
                     mkdir -p allure-results htmlcov
+                    chmod 777 allure-results htmlcov
                 '''
             }
         }
-
         stage('Unit Tests') {
             steps {
                 sh '''
                     docker run --rm \
+                    --user $(id -u):$(id -g) \
                     -v ${ALLURE_RESULTS}:/tmp/allure-results \
                     -v ${COVERAGE_DIR}:/app/htmlcov \
                     employee-test \
@@ -37,11 +34,11 @@ pipeline {
                 '''
             }
         }
-
         stage('Integration Tests') {
             steps {
                 sh '''
                     docker run --rm \
+                    --user $(id -u):$(id -g) \
                     -v ${ALLURE_RESULTS}:/tmp/allure-results \
                     employee-test \
                     pytest tests/integration_tests \
@@ -49,11 +46,11 @@ pipeline {
                 '''
             }
         }
-
         stage('E2E Tests') {
             steps {
                 sh '''
                     docker run --rm \
+                    --user $(id -u):$(id -g) \
                     -v ${ALLURE_RESULTS}:/tmp/allure-results \
                     -e TEST_MODE=true \
                     -e BROWSER=chrome \
@@ -65,23 +62,22 @@ pipeline {
                     APP_PID=\$! ;
                     sleep 5 ;
                     behave \
+                        --tags=-skip \
                         -f allure_behave.formatter:AllureFormatter \
                         -o /tmp/allure-results \
                         tests/end_to_end_test/features ;
                     EXIT_CODE=\$? ;
-                    kill \$APP_PID ;
+                    kill \$APP_PID 2>/dev/null || true ;
                     exit \$EXIT_CODE
                     "
                 '''
             }
         }
-
         stage('Build Production Image') {
             steps {
                 sh 'docker build --no-cache --target production -t employee-app ./employee'
             }
         }
-
         stage('Deploy') {
             steps {
                 sh '''
@@ -91,20 +87,29 @@ pipeline {
             }
         }
     }
-
     post {
         always {
             script {
-            allure([
-                includeProperties: false,
-                jdk: '',
-                resultPolicy: 'LEAVE_AS_IS',
-                results: [[path: 'allure-results']]
+                // Check if allure-results has files
+                sh 'ls -la allure-results/ || echo "No allure results found"'
+                
+                // Generate and publish Allure report
+                allure([
+                    includeProperties: false,
+                    jdk: '',
+                    properties: [],
+                    reportBuildPolicy: 'ALWAYS',
+                    results: [[path: 'allure-results']]
+                ])
+            }
+            publishHTML([
+                allowMissing: true,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: 'htmlcov',
+                reportFiles: 'index.html',
+                reportName: 'Coverage Report'
             ])
-        }
-
-            archiveArtifacts artifacts: 'htmlcov/**', allowEmptyArchive: true
-
             sh 'docker system prune -f'
         }
     }
