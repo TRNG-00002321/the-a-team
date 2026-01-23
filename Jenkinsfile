@@ -27,12 +27,12 @@ pipeline {
             steps {
                 sh '''
                     docker run --rm \
-                    -v ${ALLURE_RESULTS}:/app/allure-results \
+                    -v ${ALLURE_RESULTS}:/tmp/allure-results \
                     -v ${COVERAGE_DIR}:/app/htmlcov \
                     employee-test \
                     pytest tests/unit_tests \
-                    --alluredir=/app/allure-results \
-                    --cov=tests \
+                    --alluredir=/tmp/allure-results \
+                    --cov=src \
                     --cov-report=html:/app/htmlcov
                 '''
             }
@@ -42,10 +42,10 @@ pipeline {
             steps {
                 sh '''
                     docker run --rm \
-                    -v ${ALLURE_RESULTS}:/app/allure-results \
+                    -v ${ALLURE_RESULTS}:/tmp/allure-results \
                     employee-test \
                     pytest tests/integration_tests \
-                    --alluredir=/app/allure-results
+                    --alluredir=/tmp/allure-results
                 '''
             }
         }
@@ -54,7 +54,7 @@ pipeline {
             steps {
                 sh '''
                     docker run --rm \
-                    -v ${ALLURE_RESULTS}:/app/allure-results \
+                    -v ${ALLURE_RESULTS}:/tmp/allure-results \
                     -e TEST_MODE=true \
                     -e BROWSER=chrome \
                     -e HEADLESS=true \
@@ -62,13 +62,17 @@ pipeline {
                     employee-test \
                     sh -c "
                     python main.py & 
-                    sleep 5 &&
+                    APP_PID=\$! ;
+                    sleep 5 ;
                     behave \
                         -f allure_behave.formatter:AllureFormatter \
-                        -o /app/allure-results \
-                        tests/end_to_end_test/features
+                        -o /tmp/allure-results \
+                        tests/end_to_end_test/features ;
+                    EXIT_CODE=\$? ;
+                    kill \$APP_PID ;
+                    exit \$EXIT_CODE
                     "
-                '''     
+                '''
             }
         }
 
@@ -90,11 +94,14 @@ pipeline {
 
     post {
         always {
-            allure(
-            includeProperties: false,
-            jdk: '',
-            results: [[path: 'allure-results']]
-            )
+            script {
+            allure([
+                includeProperties: false,
+                jdk: '',
+                resultPolicy: 'LEAVE_AS_IS',
+                results: [[path: 'allure-results']]
+            ])
+        }
 
             archiveArtifacts artifacts: 'htmlcov/**', allowEmptyArchive: true
 
