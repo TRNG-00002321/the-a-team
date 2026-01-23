@@ -98,12 +98,14 @@ pipeline {
             )
 
             // 🔹 Coverage (Jenkins Coverage plugin)
-            publishCoverage adapters: [
-                coberturaAdapter('coverage.xml')
-            ]
+            recordCoverage(
+                tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']],
+                sourceCodeRetention: 'EVERY_BUILD'
+            )
 
             // 🔹 Keep HTML coverage
             archiveArtifacts artifacts: 'htmlcov/**', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'coverage.xml, htmlcov/**', allowEmptyArchive: true
         }
     }
 }
