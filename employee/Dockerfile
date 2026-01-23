@@ -36,6 +36,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get install -y --no-install-recommends google-chrome-stable \
     && rm -rf /var/lib/apt/lists/*
 
+RUN pip install --no-cache-dir \
+    pytest \
+    pytest-cov \
+    allure-pytest \
+    allure-behave
+
 COPY tests/ ./tests
 COPY behave.ini .
 

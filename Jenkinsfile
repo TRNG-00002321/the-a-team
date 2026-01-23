@@ -17,7 +17,8 @@ pipeline {
         stage('Prepare Report Directories') {
             steps {
                 sh '''
-                mkdir -p allure-results allure-report htmlcov
+                    rm -rf allure-results htmlcov
+                    mkdir -p allure-results htmlcov
                 '''
             }
         }
