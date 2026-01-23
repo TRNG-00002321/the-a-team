@@ -12,6 +12,7 @@ class DatabaseConnection:
     
     def __init__(self, db_path: Optional[str] = None):
         load_dotenv()
+
         test_mode = os.getenv("TEST_MODE", "false").lower() == "true"
 
         if db_path:

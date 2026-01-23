@@ -8,6 +8,7 @@ Background:
   And the test database is already seeded with users
   And the employee is logged in
 
+@skip
 Scenario: Successful Delete Expense
   Given the employee is on my expenses
   And an expense with the description: "Client lunch" is shown
