@@ -57,7 +57,7 @@ pipeline {
                     -e HEADLESS=true \
                     -e TEST_DATABASE_PATH=/app/tests/test_db/test_expense_manager.db \
                     employee-test \
-                    sh -c "
+                    sh -c '
                     python main.py &
                     APP_PID=\$!;
                     sleep 5;
@@ -69,7 +69,7 @@ pipeline {
                     EXIT_CODE=\$?;
                     kill \$APP_PID;
                     exit \$EXIT_CODE
-                    "
+                    '
                 '''
             }
         }
