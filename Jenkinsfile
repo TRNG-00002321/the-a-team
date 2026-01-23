@@ -48,8 +48,8 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh '''
-                  docker-compose down --remove-orphans || true
-                  docker-compose up -d employee
+                    docker-compose -p expense-manager down --remove-orphans
+                    docker-compose -p expense-manager up -d employee
                 '''
             }
         }
