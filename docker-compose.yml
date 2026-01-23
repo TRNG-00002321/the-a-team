@@ -9,17 +9,3 @@ services:
       HEADLESS: "true"
       DATABASE_PATH: /app/expense_manager.db
       TEST_DATABASE_PATH: /app/tests/test_db/test_expense_manager.db
-    # volumes:
-    #   - db-data:/data
-
-#   manager:
-#     build: ./manager
-#     ports:
-#       - "5001:5001"
-#     environment:
-#       DATABASE_PATH: /data/expense_manager.db
-#     volumes:
-#       - db-data:/data
-
-# volumes:
-#   db-data:
