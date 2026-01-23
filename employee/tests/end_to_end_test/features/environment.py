@@ -46,12 +46,6 @@ def before_scenario(context, scenario):
     browser = os.getenv("BROWSER", "chrome").lower()
     headless = os.getenv("HEADLESS", "false").lower() == "true"
 
-    sys.stderr.write("\n" + "="*60 + "\n")
-    sys.stderr.write("BEFORE_SCENARIO - About to call create_driver()\n")
-    sys.stderr.write(f"  browser={browser}, headless={headless}\n")
-    sys.stderr.write("="*60 + "\n\n")
-    sys.stderr.flush()
-
     context.driver = create_driver(browser, headless)
     context.driver.maximize_window()
 
