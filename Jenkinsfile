@@ -21,15 +21,17 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 sh '''
+                    mkdir -p coverage htmlcov allure-results
+
                     docker run --rm \
                     -v ${WORKSPACE}/allure-results:/tmp/allure-results \
-                    -v ${WORKSPACE}/coverage.xml:/tmp/coverage.xml \
+                    -v ${WORKSPACE}/coverage:/tmp/coverage \
                     -v ${WORKSPACE}/htmlcov:/tmp/htmlcov \
                     employee-test \
                     pytest tests/unit_tests \
                     --alluredir=/tmp/allure-results \
                     --cov=src \
-                    --cov-report=xml:/tmp/coverage.xml \
+                    --cov-report=xml:/tmp/coverage/coverage.xml \
                     --cov-report=html:/tmp/htmlcov
                 '''
             }
